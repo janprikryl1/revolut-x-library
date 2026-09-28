@@ -1,8 +1,8 @@
 site_name: Revolut X Python
 site_description: Python SDK for the Revolut X Crypto Exchange REST API
-site_url: https://janprikryl.github.io/diplomova_prace/
-repo_name: janprikryl/diplomova_prace
-repo_url: https://github.com/janprikryl/diplomova_prace
+site_url: https://github.com/janprikryl1/revolut-x-library
+repo_name: janprikryl/revolut-x-library
+repo_url: https://github.com/janprikryl1/revolut-x-library
 copyright: "Copyright &copy; 2026 Jan Přikryl | Diplomová práce VŠB-TUO"
 
 theme:
