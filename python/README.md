@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="docs/assets/logo.png" alt="revolut-x-python logo" width="140" style="border-radius: 14px;" />
-</p>
-
 # revolut-x-python
 
 > Python SDK for the Revolut X Crypto Exchange REST API

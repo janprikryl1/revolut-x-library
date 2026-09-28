@@ -18,7 +18,7 @@
 ## Installation
 
 ```bash
-pip install revolut-x-python
+pip install -i https://test.pypi.org/simple/ revolut-x-python==0.0.3
 ```
 
 ---
