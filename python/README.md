@@ -26,9 +26,9 @@ A robust, fully-typed Python library for interacting with the Revolut X Crypto E
 
 Full interactive documentation (with API reference and guides) is powered by **MkDocs (Ivory theme)**:
 
-- **Local Preview**: `cd revolut-x-library/python && mkdocs serve`
-- **Build Static HTML**: `cd revolut-x-library/python && mkdocs build`
-- **Deploy to GitHub Pages**: `cd revolut-x-library/python && mkdocs gh-deploy`
+- **Local Preview**: `cd python && mkdocs serve`
+- **Build Static HTML**: `cd python && mkdocs build`
+- **Deploy to GitHub Pages**: `cd python && mkdocs gh-deploy`
 
 ## Quick Start
 

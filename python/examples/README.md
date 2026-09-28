@@ -10,7 +10,7 @@ Before running the examples, ensure the package is installed:
 
 ```bash
 # In development (editable mode from repo root):
-pip install -e revolut-x-library/python
+pip install -e python
 ```
 
 For examples requiring authentication (`03_*` and `04_*`), ensure your `.env` file (or environment variables) contains your API key and private key path:
