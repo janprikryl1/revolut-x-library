@@ -1,0 +1,78 @@
+/* ==========================================================================
+   Ivory Theme Palette for Material for MkDocs
+   ========================================================================== */
+
+:root {
+  --md-primary-fg-color: #2f2a26;
+  --md-primary-fg-color--light: #453e39;
+  --md-primary-fg-color--dark: #1d1917;
+}
+
+/* Light mode — Warm Ivory / Cream */
+[data-md-color-scheme="default"] {
+  --md-default-bg-color: #faf7f2;
+  --md-default-bg-color--light: #fffdfa;
+  --md-default-bg-color--lighter: #f5f0e8;
+  --md-default-fg-color: #2e2a27;
+  --md-default-fg-color--light: #615953;
+  --md-default-fg-color--lighter: #948b83;
+  --md-default-fg-color--lightest: #d4ccc4;
+
+  /* Header & Navigation */
+  --md-primary-fg-color: #38312c;
+  --md-primary-fg-color--light: #4d443e;
+  --md-primary-fg-color--dark: #241f1c;
+  --md-primary-bg-color: #faf7f2;
+  --md-primary-bg-color--light: #ffffff;
+
+  /* Accent (Warm Amber / Ochre) */
+  --md-accent-fg-color: #b86b24;
+  --md-accent-fg-color--transparent: rgba(184, 107, 36, 0.1);
+
+  /* Code Blocks */
+  --md-code-bg-color: #f2ece3;
+  --md-code-fg-color: #2b2724;
+
+  /* Tables & Borders */
+  --md-typeset-table-color: #e8e0d5;
+}
+
+/* Dark mode — Warm Espresso / Dark Ivory */
+[data-md-color-scheme="slate"] {
+  --md-default-bg-color: #191716;
+  --md-default-bg-color--light: #211e1c;
+  --md-default-bg-color--lighter: #2c2825;
+  --md-default-fg-color: #ede7e1;
+  --md-default-fg-color--light: #b5ada5;
+  --md-default-fg-color--lighter: #7a726b;
+
+  /* Header */
+  --md-primary-fg-color: #12100f;
+  --md-primary-fg-color--light: #1f1c1a;
+  --md-primary-bg-color: #ede7e1;
+
+  /* Accent */
+  --md-accent-fg-color: #e09f53;
+  --md-accent-fg-color--transparent: rgba(224, 159, 83, 0.15);
+
+  /* Code Blocks */
+  --md-code-bg-color: #24201d;
+  --md-code-fg-color: #ede7e1;
+
+  /* Tables & Borders */
+  --md-typeset-table-color: #38322e;
+}
+
+/* Rounded cards & code block polish */
+.md-typeset code {
+  border-radius: 4px;
+  padding: 0.15em 0.35em;
+}
+
+.md-typeset pre > code {
+  border-radius: 8px;
+}
+
+.md-header {
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
