@@ -14,6 +14,7 @@ from revolut_x.helpers import (
     OrderPayloadBuilder,
     build_limit_order,
     build_market_order,
+    build_order,
     normalize_symbol,
     validate_against_pair_rules,
 )
@@ -128,6 +129,81 @@ def test_build_limit_order_post_only() -> None:
     assert "allow_taker" in limit_conf_taker["execution_instructions"]
     assert "post_only" not in limit_conf_taker["execution_instructions"]
     assert limit_conf_taker["time_in_force"] == TimeInForce.IOC.value
+
+
+def test_build_order_market() -> None:
+    """Verify build_order routes to market order when order_type='market'."""
+    payload = build_order(
+        symbol="BTC-EUR",
+        side=OrderSide.BUY,
+        order_type=OrderType.MARKET,
+        quote_size="75.00",
+    )
+    assert payload["symbol"] == "BTC-EUR"
+    assert payload["side"] == "buy"
+    assert "market" in payload["order_configuration"]
+    assert payload["order_configuration"]["market"]["quote_size"] == "75.00"
+
+    # String order_type
+    payload_str = build_order(
+        symbol="BTC-EUR",
+        side="buy",
+        order_type="market",
+        quote_size="75.00",
+    )
+    assert payload_str["order_configuration"] == payload["order_configuration"]
+
+    # Market order with price should raise error
+    with pytest.raises(OrderValidationError) as exc_info:
+        build_order(
+            symbol="BTC-EUR",
+            side=OrderSide.BUY,
+            order_type=OrderType.MARKET,
+            price="50000.00",
+            quote_size="75.00",
+        )
+    assert "Parameter 'price' is not supported for market orders" in str(exc_info.value)
+
+
+def test_build_order_limit() -> None:
+    """Verify build_order routes to limit order when order_type='limit'."""
+    payload = build_order(
+        symbol="BTC-EUR",
+        side=OrderSide.SELL,
+        order_type=OrderType.LIMIT,
+        price="95000.00",
+        base_size="0.05",
+        post_only=True,
+    )
+    assert payload["symbol"] == "BTC-EUR"
+    assert payload["side"] == "sell"
+    assert "limit" in payload["order_configuration"]
+    limit_conf = payload["order_configuration"]["limit"]
+    assert limit_conf["price"] == "95000.00"
+    assert limit_conf["base_size"] == "0.05"
+    assert "post_only" in limit_conf["execution_instructions"]
+
+    # Limit order without price should raise error
+    with pytest.raises(OrderValidationError) as exc_info:
+        build_order(
+            symbol="BTC-EUR",
+            side=OrderSide.SELL,
+            order_type=OrderType.LIMIT,
+            base_size="0.05",
+        )
+    assert "Parameter 'price' is required for limit orders" in str(exc_info.value)
+
+
+def test_build_order_invalid_type() -> None:
+    """Verify invalid order_type raises OrderValidationError."""
+    with pytest.raises(OrderValidationError) as exc_info:
+        build_order(
+            symbol="BTC-EUR",
+            side=OrderSide.BUY,
+            order_type="stop_limit",
+            base_size="0.05",
+        )
+    assert "Invalid order_type" in str(exc_info.value)
 
 
 def test_normalize_symbol() -> None:

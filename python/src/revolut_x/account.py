@@ -8,10 +8,8 @@ All methods in this mixin **require** an API key and private key.
 """
 
 from __future__ import annotations
-
 import logging
 from typing import Any, TYPE_CHECKING
-
 from revolut_x.types import Balance, Trade
 
 if TYPE_CHECKING:

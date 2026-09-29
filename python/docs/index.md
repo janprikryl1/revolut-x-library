@@ -1,10 +1,11 @@
 # Revolut X Python
-<em>Python SDK for the Revolut X Crypto Exchange REST API.</em>
+<em>Python SDK for the Revolut X Crypto Exchange REST API (v1.0).</em>
 
 ---
 
 ## Key Highlights
 
+- **API Version 1.0 Support** — Targets Revolut X REST API `1.0` with configurable versioning.
 - **Ed25519 Authentication** — Industry-standard elliptic curve signing for private endpoints.
 - **Comprehensive Market Data** — Live order books, real-time tickers, trading pair rules, OHLCV candlesticks, and tick-by-tick public trade feeds.
 - **Automated Streaming Iterators** — `iter_candles()` and `iter_trades()` transparently handle cursor pagination and rate-limit windows.
@@ -54,7 +55,7 @@ print(f"Order ID: {order['venue_order_id']}")
 
 ## Reference
 
-Tato knihovna a její výzkumná implementace vznikla jako součást **diplomové práce** na **VŠB – Technické univerzitě Ostrava** (Fakulta elektrotechniky a informatiky).
+Tato knihovna vznikla jako součást **diplomové práce** na **VŠB – Technické univerzitě Ostrava** (Fakulta elektrotechniky a informatiky).
 
 - VŠB – Technická univerzita Ostrava, fakulta elektrotechniky a informatiky
 - **Typ práce**: Diplomová práce / Master's Thesis

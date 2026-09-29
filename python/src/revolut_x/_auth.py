@@ -1,17 +1,14 @@
 """Internal module for Ed25519 authentication for Revolut X."""
 
 from __future__ import annotations
-
 import base64
 import json
 import time
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlencode
-
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-
 from revolut_x.exceptions import AuthenticationError
 
 

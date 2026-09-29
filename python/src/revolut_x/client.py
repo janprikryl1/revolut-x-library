@@ -25,10 +25,8 @@ Example — trading (requires API key and private key)::
 """
 
 from __future__ import annotations
-
 import logging
 from pathlib import Path
-
 from revolut_x._auth import load_private_key
 from revolut_x._http import HttpClient
 from revolut_x.account import AccountMixin

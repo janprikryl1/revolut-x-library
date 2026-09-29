@@ -1,11 +1,10 @@
 from __future__ import annotations
-
 import uuid
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from typing import Any
 
-from revolut_x.types import OrderSide, TimeInForce
+from revolut_x.types import OrderSide, OrderType, TimeInForce
 from revolut_x.exceptions import OrderValidationError
 
 
@@ -182,6 +181,82 @@ class OrderPayloadBuilder:
         }
 
     @classmethod
+    def build_order(
+        cls,
+        symbol: str,
+        side: OrderSide | str,
+        order_type: OrderType | str = OrderType.MARKET,
+        *,
+        price: Any | None = None,
+        base_size: Any | None = None,
+        quote_size: Any | None = None,
+        post_only: bool = False,
+        time_in_force: TimeInForce | str = TimeInForce.GTC,
+        client_order_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Builds a payload for either a Market or Limit Order based on order_type.
+
+        Args:
+            symbol: The trading symbol (e.g., 'BTC-EUR').
+            side: The side of the order (BUY or SELL).
+            order_type: OrderType.MARKET ('market') or OrderType.LIMIT ('limit').
+            price: Required for limit orders. Must be None for market orders.
+            base_size: The amount of the base currency (e.g., BTC) to buy/sell.
+            quote_size: The amount of the quote currency (e.g., EUR) to buy/sell.
+            post_only: If True, ensures the order is entered as a MAKER order (limit only).
+            time_in_force: The time in force policy (limit only).
+            client_order_id: Optional client-side UUID for idempotency.
+
+        Returns:
+            dict[str, Any]: The constructed JSON payload for the Revolut X API.
+
+        Raises:
+            OrderValidationError: If parameters are invalid for the given order_type.
+
+        Example:
+            >>> OrderPayloadBuilder.build_order('BTC-EUR', OrderSide.BUY, order_type=OrderType.MARKET, quote_size='50.00')
+        """
+        if isinstance(order_type, str):
+            try:
+                order_type = OrderType(order_type.lower())
+            except ValueError:
+                raise OrderValidationError(f"Invalid order_type: '{order_type}'. Expected 'market' or 'limit'.")
+
+        if isinstance(side, str):
+            try:
+                side = OrderSide(side.lower())
+            except ValueError:
+                raise OrderValidationError(f"Invalid side: '{side}'. Expected 'buy' or 'sell'.")
+
+        if order_type == OrderType.MARKET:
+            if price is not None:
+                raise OrderValidationError("Parameter 'price' is not supported for market orders.")
+            if post_only:
+                raise OrderValidationError("Parameter 'post_only' is not supported for market orders.")
+            return cls.build_market_order(
+                symbol=symbol,
+                side=side,
+                base_size=base_size,
+                quote_size=quote_size,
+                client_order_id=client_order_id,
+            )
+        elif order_type == OrderType.LIMIT:
+            if price is None:
+                raise OrderValidationError("Parameter 'price' is required for limit orders.")
+            return cls.build_limit_order(
+                symbol=symbol,
+                side=side,
+                price=price,
+                base_size=base_size,
+                quote_size=quote_size,
+                post_only=post_only,
+                time_in_force=time_in_force,
+                client_order_id=client_order_id,
+            )
+        else:
+            raise OrderValidationError(f"Unsupported order_type: {order_type}")
+
+    @classmethod
     def validate_against_pair_rules(
         cls,
         payload: dict[str, Any],
@@ -344,6 +419,7 @@ class FeeCalculator:
 
 
 # Module-level convenience functions
+build_order = OrderPayloadBuilder.build_order
 build_market_order = OrderPayloadBuilder.build_market_order
 build_limit_order = OrderPayloadBuilder.build_limit_order
 validate_against_pair_rules = OrderPayloadBuilder.validate_against_pair_rules
@@ -353,6 +429,7 @@ __all__ = [
     "FeeEstimate",
     "FeeCalculator",
     "normalize_symbol",
+    "build_order",
     "build_market_order",
     "build_limit_order",
     "validate_against_pair_rules",

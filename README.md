@@ -1,14 +1,14 @@
 # Revolut X Library
 
-Multi-language SDK repository for interacting with the **Revolut X Crypto Exchange REST API**.
+Multi-language SDK repository for interacting with the **Revolut X Crypto Exchange REST API** (API Version `1.0`).
 
 ## Available SDKs
 
-| Language | Directory | Package / Status | Documentation |
-| :--- | :--- | :--- | :--- |
-| **Python** | [`python/`](./python) | [`revolut-x-python`](./python) (`v0.1.0`) | [Python Docs](./python/docs) / [Read the Docs](#) |
-| **TypeScript / Node.js** | `typescript/` | *Planned* | — |
-| **Go** | `go/` | *Planned* | — |
+| Language | Directory | Package / Status | Documentation | API Version |
+| :--- | :--- | :--- | :--- | :--- |
+| **Python** | [`python/`](./python) | [`revolut-x-python`](./python) (`v0.1.0`) | [Python Docs](./python/docs) / [Read the Docs](#) | `1.0` |
+| **TypeScript / Node.js** | `typescript/` | *Planned* | — | `1.0` |
+| **Go** | `go/` | *Planned* | — | `1.0` |
 
 ---
 

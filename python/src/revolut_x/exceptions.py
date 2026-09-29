@@ -14,7 +14,6 @@ with a single ``except RevolutXError`` block, or handle each type individually.
 """
 
 from __future__ import annotations
-
 from typing import Any
 
 

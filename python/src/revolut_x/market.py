@@ -9,10 +9,8 @@ All methods in this mixin work **without** an API key.
 """
 
 from __future__ import annotations
-
 import logging
 from typing import Any, Iterator, TYPE_CHECKING
-
 from revolut_x.types import (
     Candle,
     CurrencyConfig,
@@ -22,7 +20,6 @@ from revolut_x.types import (
     Ticker,
     Trade,
 )
-from revolut_x.exceptions import ApiError
 from revolut_x.helpers import normalize_symbol as _normalize_symbol
 
 if TYPE_CHECKING:

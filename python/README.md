@@ -1,14 +1,16 @@
 # revolut-x-python
 
-> Python SDK for the Revolut X Crypto Exchange REST API
+> Python SDK for the Revolut X Crypto Exchange REST API (API Version `1.0`)
 
 [![Python version](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
+[![API Version](https://img.shields.io/badge/API_Version-1.0-blue.svg)](https://revx.revolut.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A robust, fully-typed Python library for interacting with the Revolut X Crypto Exchange API.
+A robust, fully-typed Python library for interacting with the Revolut X Crypto Exchange API (`v1.0`).
 
 ## Features
 
+- **API Version 1.0** — fully compatible with Revolut X REST API `1.0` (configurable via `api_version="1.0"`)
 - **Ed25519 Authentication** — secure request signing for private API endpoints
 - **Public Market Data** — real-time tickers, order book, OHLCV candles, and public trades
 - **Trading** — market and limit orders with post-only (maker) support

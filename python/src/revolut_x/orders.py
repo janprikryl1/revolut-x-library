@@ -8,10 +8,8 @@ All methods in this mixin **require** an API key and private key.
 """
 
 from __future__ import annotations
-
 import logging
 from typing import Any, TYPE_CHECKING
-
 from revolut_x.types import (
     Fill,
     OrderDetail,
@@ -20,7 +18,6 @@ from revolut_x.types import (
     OrderType,
     TimeInForce,
 )
-from revolut_x.exceptions import AuthenticationError
 from revolut_x.helpers import OrderPayloadBuilder
 
 if TYPE_CHECKING:
@@ -43,34 +40,79 @@ class OrdersMixin:
     # Place orders
     # ------------------------------------------------------------------
 
-    def place_order(self, payload: dict[str, Any]) -> OrderResponse:
-        """Submit a raw order payload to the exchange.
+    def place_order(
+        self,
+        symbol_or_payload: str | dict[str, Any],
+        side: OrderSide | str | None = None,
+        *,
+        order_type: OrderType | str = OrderType.MARKET,
+        price: str | None = None,
+        base_size: str | None = None,
+        quote_size: str | None = None,
+        post_only: bool = False,
+        time_in_force: TimeInForce | str = TimeInForce.GTC,
+        client_order_id: str | None = None,
+    ) -> OrderResponse:
+        """Submit an order to the exchange.
 
-        This is the low-level method.  For convenience, use
-        :meth:`place_market_order` or :meth:`place_limit_order` instead.
+        This method supports two calling styles:
+
+        1. **Unified high-level placement** (recommended)::
+
+            >>> # Market order
+            >>> order = client.place_order("BTC-EUR", OrderSide.BUY, order_type="market", quote_size="50.00")
+            >>> # Limit order
+            >>> order = client.place_order("BTC-EUR", OrderSide.BUY, order_type="limit", price="80000.00", quote_size="50.00")
+
+        2. **Low-level raw payload dictionary** (backward compatible)::
+
+            >>> payload = OrderPayloadBuilder.build_market_order("BTC-EUR", OrderSide.BUY, quote_size="50.00")
+            >>> order = client.place_order(payload)
 
         Args:
-            payload: A complete order payload dict as specified by the
-                Revolut X API.  Use :class:`~revolut_x.helpers.OrderPayloadBuilder`
-                to construct valid payloads.
+            symbol_or_payload: Trading pair (e.g. ``'BTC-EUR'``) or a complete payload dict.
+            side: :attr:`OrderSide.BUY` or :attr:`OrderSide.SELL` (required if symbol string is given).
+            order_type: :attr:`OrderType.MARKET` (default) or :attr:`OrderType.LIMIT`.
+            price: Limit price in quote currency (required for limit orders, omitted for market orders).
+            base_size: Amount in the base currency (e.g. ``'0.001'`` BTC). Mutually exclusive with ``quote_size``.
+            quote_size: Amount in the quote currency (e.g. ``'50.00'`` EUR). Mutually exclusive with ``base_size``.
+            post_only: If ``True``, guarantees the order enters the book as a maker (0% fee, limit orders only).
+            time_in_force: :attr:`TimeInForce.GTC` (default) or :attr:`TimeInForce.IOC` (limit orders only).
+            client_order_id: Optional client UUID for idempotency. Auto-generated if not provided.
 
         Returns:
             An :class:`~revolut_x.types.OrderResponse` with the assigned
             ``venue_order_id`` and initial ``state``.
 
         Raises:
+            ValueError / OrderValidationError: If order parameters are invalid or missing.
             AuthenticationError: If the client is not authenticated.
             ApiError: If the exchange rejects the order.
 
         Example::
 
-            >>> from revolut_x.helpers import OrderPayloadBuilder
-            >>> payload = OrderPayloadBuilder.build_market_order(
-            ...     "BTC-EUR", OrderSide.BUY, quote_size="50.00"
+            >>> order = client.place_order(
+            ...     "BTC-EUR", OrderSide.BUY, order_type="market", quote_size="50.00"
             ... )
-            >>> result = client.place_order(payload)
-            >>> print(f"Order ID: {result['venue_order_id']}")
+            >>> print(f"Order ID: {order['venue_order_id']}")
         """
+        if isinstance(symbol_or_payload, dict):
+            payload = symbol_or_payload
+        else:
+            if side is None:
+                raise ValueError("Parameter 'side' (OrderSide.BUY / OrderSide.SELL) is required when placing an order by symbol.")
+            payload = OrderPayloadBuilder.build_order(
+                symbol=symbol_or_payload,
+                side=side,
+                order_type=order_type,
+                price=price,
+                base_size=base_size,
+                quote_size=quote_size,
+                post_only=post_only,
+                time_in_force=time_in_force,
+                client_order_id=client_order_id,
+            )
+
         _status, resp = self._http.request(
             "POST", "/orders", json_body=payload, authenticated=True
         )
@@ -91,6 +133,8 @@ class OrdersMixin:
         client_order_id: str | None = None,
     ) -> OrderResponse:
         """Place a market order (immediate execution, 0.09% taker fee).
+
+        Convenience wrapper around :meth:`place_order` with ``order_type=OrderType.MARKET``.
 
         Exactly **one** of ``base_size`` or ``quote_size`` must be provided.
 
@@ -121,16 +165,14 @@ class OrdersMixin:
             ... )
             >>> print(f"Bought BTC, order ID: {order['venue_order_id']}")
         """
-        if isinstance(side, str):
-            side = OrderSide(side.lower())
-        payload = OrderPayloadBuilder.build_market_order(
-            symbol=symbol,
+        return self.place_order(
+            symbol_or_payload=symbol,
             side=side,
+            order_type=OrderType.MARKET,
             base_size=base_size,
             quote_size=quote_size,
             client_order_id=client_order_id,
         )
-        return self.place_order(payload)
 
     def place_limit_order(
         self,
@@ -145,6 +187,8 @@ class OrdersMixin:
         client_order_id: str | None = None,
     ) -> OrderResponse:
         """Place a limit order at a specific price.
+
+        Convenience wrapper around :meth:`place_order` with ``order_type=OrderType.LIMIT``.
 
         Exactly **one** of ``base_size`` or ``quote_size`` must be provided.
 
@@ -181,20 +225,17 @@ class OrdersMixin:
             ... )
             >>> print(f"Limit order placed: {order['venue_order_id']}")
         """
-        if isinstance(side, str):
-            side = OrderSide(side.lower())
-        tif = time_in_force.value if isinstance(time_in_force, TimeInForce) else str(time_in_force)
-        payload = OrderPayloadBuilder.build_limit_order(
-            symbol=symbol,
+        return self.place_order(
+            symbol_or_payload=symbol,
             side=side,
+            order_type=OrderType.LIMIT,
             price=price,
             base_size=base_size,
             quote_size=quote_size,
             post_only=post_only,
-            time_in_force=tif,
+            time_in_force=time_in_force,
             client_order_id=client_order_id,
         )
-        return self.place_order(payload)
 
     # ------------------------------------------------------------------
     # Query orders

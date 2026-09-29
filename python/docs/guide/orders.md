@@ -8,13 +8,38 @@ Revolut X allows placing, querying, and canceling orders via authenticated API e
 
 You can size orders either in **Quote Currency** (e.g. EUR) or in **Base Currency** (e.g. BTC).
 
-### 1. Zero-Fee Maker Limit Orders (`post_only=True`)
+### 1. Unified `place_order` (Recommended)
+You can use the unified `place_order` method and specify `order_type`:
+
+```python
+from revolut_x import RevolutXClient, OrderSide, OrderType
+
+client = RevolutXClient(api_key="...", private_key_path="keys/private.pem")
+
+# Market order
+order = client.place_order(
+    "BTC-EUR",
+    OrderSide.BUY,
+    order_type=OrderType.MARKET,
+    quote_size="50.00",
+)
+
+# Limit order (Maker post-only)
+order = client.place_order(
+    "BTC-EUR",
+    OrderSide.BUY,
+    order_type=OrderType.LIMIT,
+    price="70000.00",
+    quote_size="50.00",
+    post_only=True,
+)
+```
+
+### 2. Zero-Fee Maker Limit Orders (`place_limit_order`)
 To guarantee execution with **0.00% Maker fees**, set `post_only=True`:
 
 ```python
 from revolut_x import RevolutXClient, OrderSide, TimeInForce
-
-client = RevolutXClient(api_key="...", private_key_path="keys/private.pem")
 
 # Buy BTC for 50 EUR at limit price 70,000 EUR
 order = client.place_limit_order(
@@ -29,7 +54,7 @@ order = client.place_limit_order(
 print(f"Order submitted: ID = {order['venue_order_id']}, State = {order['state']}")
 ```
 
-### 2. Immediate Market Orders (Taker: 0.09%)
+### 3. Immediate Market Orders (`place_market_order`)
 
 ```python
 # Market buy spending 100 EUR

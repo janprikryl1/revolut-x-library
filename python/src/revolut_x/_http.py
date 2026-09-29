@@ -1,15 +1,12 @@
 """Internal HTTP client module for Revolut X REST API requests."""
 
 from __future__ import annotations
-
 import json
 import logging
 import time
 from typing import Any
-
 import requests
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-
 from revolut_x._auth import sign_request
 from revolut_x.exceptions import ApiError, AuthenticationError, NetworkError, RateLimitError
 
