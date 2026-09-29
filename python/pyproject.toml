@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "revolut-x-python"
-version = "0.0.4"
+version = "0.0.5"
 description = "Python SDK for the Revolut X Crypto Exchange REST API (v1.0)"
 readme = "README.md"
 license = "MIT"

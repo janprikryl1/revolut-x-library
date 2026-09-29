@@ -3,7 +3,7 @@
 > Python SDK for the Revolut X Crypto Exchange REST API (API Version `1.0`)
 
 [![Python version](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
-[![API Version](https://img.shields.io/badge/API_Version-1.0-blue.svg)](https://revx.revolut.com)
+[![API Version](https://img.shields.io/badge/API_Version-1.0-blue.svg)]([https://revx.revolut.com](https://developer.revolut.com/docs/api/revolut-x-crypto-exchange))
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A robust, fully-typed Python library for interacting with the Revolut X Crypto Exchange API (`v1.0`).
@@ -50,7 +50,7 @@ for candle in candles[:5]:
 ### Trading and Account (Authentication Required)
 
 ```python
-from revolut_x import RevolutXClient, OrderSide
+from revolut_x import RevolutXClient, OrderSide, OrderType
 
 client = RevolutXClient(
     api_key="your-api-key",
@@ -64,14 +64,15 @@ for b in balances:
         print(f"{b['currency']}: {b['available']} available")
 
 # Place a market buy order (spend 50 EUR on BTC)
-order = client.place_market_order(
+order = client.place_order(
     "BTC-EUR", OrderSide.BUY, quote_size="50.00"
 )
 print(f"Order ID: {order['venue_order_id']}")
 
 # Place a post-only limit order (0% maker fee)
-limit_order = client.place_limit_order(
+limit_order = client.place_order(
     "BTC-EUR", OrderSide.SELL,
+    order_type=OrderType.LIMIT,
     price="90000.00",
     base_size="0.001",
     post_only=True,
@@ -133,18 +134,22 @@ for trade in client.iter_trades("BTC-EUR", start_date=1700000000000):
 ### Orders (authentication required)
 
 ```python
-from revolut_x import OrderSide, TimeInForce
+from revolut_x import OrderSide, OrderType, TimeInForce
 
-# Place orders
+# Unified place_order method
+market = client.place_order("BTC-EUR", OrderSide.BUY, quote_size="50.00")
+limit = client.place_order("BTC-EUR", OrderSide.SELL, order_type=OrderType.LIMIT,
+                           price="90000.00", base_size="0.001",
+                           post_only=True, time_in_force=TimeInForce.GTC)
+
+# Convenience wrappers are also available
 market = client.place_market_order("BTC-EUR", OrderSide.BUY, quote_size="50.00")
-limit = client.place_limit_order("BTC-EUR", OrderSide.SELL,
-                                  price="90000.00", base_size="0.001",
-                                  post_only=True, time_in_force=TimeInForce.GTC)
+limit = client.place_limit_order("BTC-EUR", OrderSide.SELL, price="90000.00",
+                                 base_size="0.001", post_only=True)
 
-# Raw payload via OrderPayloadBuilder
-from revolut_x.helpers import OrderPayloadBuilder
-payload = OrderPayloadBuilder.build_market_order("BTC-EUR", OrderSide.BUY,
-                                                  quote_size="50.00")
+# Raw payload or builder
+from revolut_x import build_order
+payload = build_order("BTC-EUR", OrderSide.BUY, quote_size="50.00")
 result = client.place_order(payload)
 
 # Query orders
@@ -170,12 +175,11 @@ trades, cursor = client.get_account_trades("BTC-EUR")   # list[Trade], cursor
 ### Helpers
 
 ```python
-from revolut_x import FeeCalculator, OrderSide
-from revolut_x.helpers import OrderPayloadBuilder
+from revolut_x import FeeCalculator, OrderSide, OrderPayloadBuilder, build_order
 
 # Build and validate a payload
-payload = OrderPayloadBuilder.build_limit_order(
-    "BTC-EUR", OrderSide.BUY, price="85000.00", quote_size="50.00"
+payload = build_order(
+    "BTC-EUR", OrderSide.BUY, order_type="limit", price="85000.00", quote_size="50.00"
 )
 pair_rules = client.get_pair("BTC-EUR")
 is_valid, errors = OrderPayloadBuilder.validate_against_pair_rules(payload, pair_rules)
@@ -203,7 +207,7 @@ from revolut_x.exceptions import (
 )
 
 try:
-    client.place_market_order("BTC-EUR", OrderSide.BUY, quote_size="50.00")
+    client.place_order("BTC-EUR", OrderSide.BUY, quote_size="50.00")
 except AuthenticationError as e:
     print(f"Auth failed: {e}")
     if e.hint:
