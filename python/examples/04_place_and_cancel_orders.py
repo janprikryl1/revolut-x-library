@@ -3,7 +3,7 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv
-from revolut_x import RevolutXClient, OrderSide
+from revolut_x import RevolutXClient, OrderSide, OrderType
 
 # Load .env
 for candidate in (Path(".env"), Path("../.env"), Path("../../.env")):
@@ -22,9 +22,10 @@ def main():
     ticker = client.get_ticker("BTC-EUR")
     safe_price = str(round(float(ticker["last_price"]) * 0.5, 2))
 
-    order = client.place_limit_order(
+    order = client.place_order(
         symbol="BTC-EUR",
         side=OrderSide.BUY,
+        order_type=OrderType.LIMIT,
         price=safe_price,
         quote_size="1.00",
         post_only=True,

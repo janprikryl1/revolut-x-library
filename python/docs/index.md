@@ -27,7 +27,7 @@ pip install -i https://test.pypi.org/simple/ revolut-x-python
 ## Quick Example
 
 ```python
-from revolut_x import RevolutXClient, OrderSide, Interval
+from revolut_x import RevolutXClient, OrderSide, OrderType, Interval
 
 # 1. Public Market Data (No API Key Required)
 client = RevolutXClient()
@@ -41,9 +41,10 @@ client = RevolutXClient(
 )
 
 # Submit a 0% fee limit buy order
-order = client.place_limit_order(
+order = client.place_order(
     symbol="BTC-EUR",
     side=OrderSide.BUY,
+    order_type=OrderType.LIMIT,
     price="70000.00",
     quote_size="50.00",
     post_only=True,

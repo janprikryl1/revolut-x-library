@@ -310,6 +310,107 @@ class OrderPayloadBuilder:
 
         return len(errors) == 0, errors
 
+    @classmethod
+    def build_maker_order(
+        cls,
+        symbol: str,
+        side: OrderSide | str,
+        price: Any,
+        *,
+        base_size: Any | None = None,
+        quote_size: Any | None = None,
+        time_in_force: TimeInForce | str = TimeInForce.GTC,
+        client_order_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Builds a payload for a guaranteed zero-fee Maker Order (Limit with post_only=True).
+
+        Args:
+            symbol: The trading symbol (e.g. 'BTC-EUR').
+            side: OrderSide.BUY or OrderSide.SELL.
+            price: Limit price in quote currency per 1 base unit.
+            base_size: Amount in base currency (e.g. BTC).
+            quote_size: Amount in quote currency (e.g. EUR).
+            time_in_force: Time in force (default: GTC).
+            client_order_id: Optional client UUID.
+
+        Returns:
+            dict[str, Any]: JSON payload ready for the Revolut X API.
+        """
+        return cls.build_limit_order(
+            symbol=symbol,
+            side=side,
+            price=price,
+            base_size=base_size,
+            quote_size=quote_size,
+            post_only=True,
+            time_in_force=time_in_force,
+            client_order_id=client_order_id,
+        )
+
+
+def calculate_maker_price(
+    side: OrderSide | str,
+    *,
+    best_bid: Any | None = None,
+    best_ask: Any | None = None,
+    last_price: Any | None = None,
+    offset: Any = Decimal("0.10"),
+    tick_size: Any = Decimal("0.01"),
+) -> Decimal:
+    """Calculates an optimal limit price to guarantee entry into the order book as a Maker (0.00% fee).
+
+    For BUY orders:
+        price = (best_bid or last_price) - offset
+    For SELL orders:
+        price = (best_ask or last_price) + offset
+
+    Args:
+        side: OrderSide.BUY / OrderSide.SELL or string ('buy' / 'sell').
+        best_bid: Current best bid price (highest buyer in book).
+        best_ask: Current best ask price (lowest seller in book).
+        last_price: Fallback price if best bid/ask is not available.
+        offset: Safety offset in quote currency (default: 0.10 EUR/USD).
+        tick_size: Minimum price increment for quantisation (default: 0.01).
+
+    Returns:
+        Decimal: The quantised target price.
+
+    Raises:
+        OrderValidationError: If side is invalid or no valid reference price can be determined.
+
+    Example:
+        >>> calculate_maker_price(OrderSide.BUY, best_bid="80000.00", offset="0.10")
+        Decimal('79999.90')
+        >>> calculate_maker_price(OrderSide.SELL, best_ask="80000.50", offset="0.10")
+        Decimal('80000.60')
+    """
+    if isinstance(side, str):
+        try:
+            side_enum = OrderSide(side.lower())
+        except ValueError:
+            raise OrderValidationError(f"Invalid side: '{side}'. Expected 'buy' or 'sell'.")
+    elif isinstance(side, OrderSide):
+        side_enum = side
+    else:
+        raise OrderValidationError(f"Invalid side type: {type(side)}")
+
+    offset_dec = Decimal(str(offset))
+    tick_dec = Decimal(str(tick_size))
+
+    if side_enum == OrderSide.BUY:
+        ref = best_bid if best_bid is not None else last_price
+        if ref is None:
+            raise OrderValidationError("Cannot calculate Maker BUY price: neither 'best_bid' nor 'last_price' provided.")
+        raw_price = Decimal(str(ref)) - offset_dec
+    else:
+        ref = best_ask if best_ask is not None else last_price
+        if ref is None:
+            raise OrderValidationError("Cannot calculate Maker SELL price: neither 'best_ask' nor 'last_price' provided.")
+        raw_price = Decimal(str(ref)) + offset_dec
+
+    # Quantize to tick size
+    return raw_price.quantize(tick_dec, rounding=ROUND_HALF_UP)
+
 
 @dataclass
 class FeeEstimate:
@@ -422,6 +523,7 @@ class FeeCalculator:
 build_order = OrderPayloadBuilder.build_order
 build_market_order = OrderPayloadBuilder.build_market_order
 build_limit_order = OrderPayloadBuilder.build_limit_order
+build_maker_order = OrderPayloadBuilder.build_maker_order
 validate_against_pair_rules = OrderPayloadBuilder.validate_against_pair_rules
 
 __all__ = [
@@ -429,8 +531,10 @@ __all__ = [
     "FeeEstimate",
     "FeeCalculator",
     "normalize_symbol",
+    "calculate_maker_price",
     "build_order",
     "build_market_order",
     "build_limit_order",
+    "build_maker_order",
     "validate_against_pair_rules",
 ]

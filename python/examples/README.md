@@ -31,3 +31,4 @@ REVOLUT_PRIVATE_KEY_PATH=keys/private.pem
 | **[`03_account_balances_and_history.py`](03_account_balances_and_history.py)** | Yes | Inspecting available/reserved balances, ledger transactions, and private trade history. |
 | **[`04_place_and_cancel_orders.py`](04_place_and_cancel_orders.py)** | Yes | Submitting limit Maker orders (`post_only=True`), inspecting status, and canceling orders. |
 | **[`05_fee_calculator_and_validation.py`](05_fee_calculator_and_validation.py)** | No | Simulating Maker (0.00%) vs Taker (0.09%) fees and validating payloads against pair limits. |
+| **[`06_smart_maker_orders.py`](06_smart_maker_orders.py)** | Yes/No | Smart zero-fee Maker orders with dynamic offset pricing (`place_maker_order` / `calculate_maker_price`). |

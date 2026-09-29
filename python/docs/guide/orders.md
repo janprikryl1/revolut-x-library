@@ -35,16 +35,57 @@ order = client.place_order(
 )
 ```
 
-### 2. Zero-Fee Maker Limit Orders (`place_limit_order`)
-To guarantee execution with **0.00% Maker fees**, set `post_only=True`:
+### 2. Smart Zero-Fee Maker Orders (`place_maker_order`)
+Revolut X charges **0.00% fees for Maker orders** (orders that enter the order book and provide liquidity).
+
+Using `place_maker_order`, the SDK can automatically determine the optimal limit price by querying live book prices (`best_bid` / `best_ask`) and applying a safety `offset` (default: 0.10 EUR). This guarantees that your order enters the order book without colliding with existing quotes, qualifying for **0.00% fee**:
+
+- **BUY:** `price = best_bid - offset`
+- **SELL:** `price = best_ask + offset`
 
 ```python
-from revolut_x import RevolutXClient, OrderSide, TimeInForce
+from revolut_x import RevolutXClient, OrderSide
 
-# Buy BTC for 50 EUR at limit price 70,000 EUR
-order = client.place_limit_order(
+client = RevolutXClient(api_key="...", private_key_path="keys/private.pem")
+
+# 1. Buy BTC for 50 EUR at optimal Maker price (0.00% fee)
+order = client.place_maker_order(
     symbol="BTC-EUR",
     side=OrderSide.BUY,
+    quote_size="50.00",
+    offset="0.10",  # 10 cents below best bid
+)
+
+# 2. Sell 0.001 BTC at optimal Maker price (0.00% fee)
+order = client.place_maker_order(
+    symbol="BTC-EUR",
+    side=OrderSide.SELL,
+    base_size="0.001",
+    offset="0.10",  # 10 cents above best ask
+)
+```
+
+You can also calculate the maker price offline or inspect it beforehand:
+
+```python
+from revolut_x import calculate_maker_price, OrderSide
+
+# Query the optimal price without submitting
+price = client.calculate_maker_price("BTC-EUR", OrderSide.BUY, offset="0.10")
+print(f"Optimal Maker Buy Price: {price} EUR")
+```
+
+### 3. Manual Limit Orders with Custom Price
+To place a limit order with a custom fixed price and ensure **0.00% Maker fees**, use `order_type=OrderType.LIMIT` with `post_only=True`:
+
+```python
+from revolut_x import RevolutXClient, OrderSide, OrderType, TimeInForce
+
+# Buy BTC for 50 EUR at custom limit price 70,000 EUR
+order = client.place_order(
+    symbol="BTC-EUR",
+    side=OrderSide.BUY,
+    order_type=OrderType.LIMIT,
     price="70000.00",
     quote_size="50.00",
     post_only=True,
@@ -54,20 +95,25 @@ order = client.place_limit_order(
 print(f"Order submitted: ID = {order['venue_order_id']}, State = {order['state']}")
 ```
 
-### 3. Immediate Market Orders (`place_market_order`)
+### 4. Immediate Market Orders (0.09% Taker Fee)
+To execute immediately against the order book, use `order_type=OrderType.MARKET`:
 
 ```python
+from revolut_x import RevolutXClient, OrderSide, OrderType
+
 # Market buy spending 100 EUR
-market_buy = client.place_market_order(
+market_buy = client.place_order(
     symbol="BTC-EUR",
     side=OrderSide.BUY,
+    order_type=OrderType.MARKET,
     quote_size="100.00",
 )
 
 # Market sell selling exactly 0.002 BTC
-market_sell = client.place_market_order(
+market_sell = client.place_order(
     symbol="BTC-EUR",
     side=OrderSide.SELL,
+    order_type=OrderType.MARKET,
     base_size="0.002",
 )
 ```

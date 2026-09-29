@@ -136,20 +136,18 @@ for trade in client.iter_trades("BTC-EUR", start_date=1700000000000):
 ```python
 from revolut_x import OrderSide, OrderType, TimeInForce
 
-# Unified place_order method
-market = client.place_order("BTC-EUR", OrderSide.BUY, quote_size="50.00")
+# Unified place_order method (with order_type)
+market = client.place_order("BTC-EUR", OrderSide.BUY, order_type=OrderType.MARKET, quote_size="50.00")
 limit = client.place_order("BTC-EUR", OrderSide.SELL, order_type=OrderType.LIMIT,
                            price="90000.00", base_size="0.001",
                            post_only=True, time_in_force=TimeInForce.GTC)
 
-# Convenience wrappers are also available
-market = client.place_market_order("BTC-EUR", OrderSide.BUY, quote_size="50.00")
-limit = client.place_limit_order("BTC-EUR", OrderSide.SELL, price="90000.00",
-                                 base_size="0.001", post_only=True)
+# Smart Maker order (auto-calculates optimal limit price from book with offset)
+maker = client.place_maker_order("BTC-EUR", OrderSide.BUY, quote_size="50.00", offset="0.10")
 
 # Raw payload or builder
 from revolut_x import build_order
-payload = build_order("BTC-EUR", OrderSide.BUY, quote_size="50.00")
+payload = build_order("BTC-EUR", OrderSide.BUY, order_type=OrderType.MARKET, quote_size="50.00")
 result = client.place_order(payload)
 
 # Query orders

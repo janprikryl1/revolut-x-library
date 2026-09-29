@@ -9,6 +9,7 @@ All methods in this mixin **require** an API key and private key.
 
 from __future__ import annotations
 import logging
+from decimal import Decimal
 from typing import Any, TYPE_CHECKING
 from revolut_x.types import (
     Fill,
@@ -18,7 +19,7 @@ from revolut_x.types import (
     OrderType,
     TimeInForce,
 )
-from revolut_x.helpers import OrderPayloadBuilder
+from revolut_x.helpers import OrderPayloadBuilder, calculate_maker_price
 
 if TYPE_CHECKING:
     from revolut_x._http import HttpClient
@@ -233,6 +234,105 @@ class OrdersMixin:
             base_size=base_size,
             quote_size=quote_size,
             post_only=post_only,
+            time_in_force=time_in_force,
+            client_order_id=client_order_id,
+        )
+
+    def calculate_maker_price(
+        self,
+        symbol: str,
+        side: OrderSide | str,
+        *,
+        offset: Any = Decimal("0.10"),
+        tick_size: Any = Decimal("0.01"),
+    ) -> Decimal:
+        """Fetch current ticker for symbol and calculate the optimal Maker price.
+
+        Args:
+            symbol: Trading pair (e.g. ``'BTC-EUR'``).
+            side: :attr:`OrderSide.BUY` or :attr:`OrderSide.SELL`.
+            offset: Offset in quote currency (default: ``0.10``).
+            tick_size: Price tick size for quantisation (default: ``0.01``).
+
+        Returns:
+            Decimal: The optimal limit price for a zero-fee Maker order.
+        """
+        get_ticker_fn = getattr(self, "get_ticker", None)
+        if get_ticker_fn is None:
+            raise RuntimeError("get_ticker is not available on this client instance.")
+        ticker = get_ticker_fn(symbol)
+        return calculate_maker_price(
+            side=side,
+            best_bid=ticker.get("bid"),
+            best_ask=ticker.get("ask"),
+            last_price=ticker.get("last_price"),
+            offset=offset,
+            tick_size=tick_size,
+        )
+
+    def place_maker_order(
+        self,
+        symbol: str,
+        side: OrderSide | str,
+        *,
+        price: str | None = None,
+        offset: Any = Decimal("0.10"),
+        tick_size: Any = Decimal("0.01"),
+        base_size: str | None = None,
+        quote_size: str | None = None,
+        time_in_force: TimeInForce | str = TimeInForce.GTC,
+        client_order_id: str | None = None,
+    ) -> OrderResponse:
+        """Place a guaranteed zero-fee Maker limit order (0.00% fee).
+
+        If ``price`` is not explicitly provided, this method automatically fetches
+        the latest market ticker and computes an optimal Maker price with the given
+        ``offset``:
+        - For BUY: ``best_bid - offset``
+        - For SELL: ``best_ask + offset``
+
+        The order is submitted with ``post_only=True``, ensuring the exchange will
+        accept it as a Maker (0% fee) or reject it if it would match immediately.
+
+        Exactly **one** of ``base_size`` or ``quote_size`` must be provided.
+
+        Args:
+            symbol: Trading pair (e.g. ``'BTC-EUR'``).
+            side: :attr:`OrderSide.BUY` or :attr:`OrderSide.SELL`.
+            price: Optional fixed limit price. If omitted, calculated dynamically.
+            offset: Offset in quote currency from best bid/ask (default: ``0.10``).
+            tick_size: Minimum price increment for quantisation (default: ``0.01``).
+            base_size: Amount in the base currency (e.g. ``'0.001'`` BTC).
+            quote_size: Amount in the quote currency (e.g. ``'50.00'`` EUR).
+            time_in_force: :attr:`TimeInForce.GTC` (default) or :attr:`TimeInForce.IOC`.
+            client_order_id: Optional UUID for idempotency.
+
+        Returns:
+            An :class:`~revolut_x.types.OrderResponse` from the exchange.
+
+        Raises:
+            ValueError / OrderValidationError: If sizes or side are invalid.
+            AuthenticationError: If the client is not authenticated.
+            ApiError: If the exchange rejects the order.
+
+        Example::
+
+            >>> # Buy BTC for 50 EUR with zero fee at optimal Maker price:
+            >>> order = client.place_maker_order("BTC-EUR", OrderSide.BUY, quote_size="50.00")
+            >>> print(f"Maker order placed: {order['venue_order_id']}")
+        """
+        if price is None:
+            calc_price = str(self.calculate_maker_price(symbol, side, offset=offset, tick_size=tick_size))
+        else:
+            calc_price = str(price)
+
+        return self.place_limit_order(
+            symbol=symbol,
+            side=side,
+            price=calc_price,
+            base_size=base_size,
+            quote_size=quote_size,
+            post_only=True,
             time_in_force=time_in_force,
             client_order_id=client_order_id,
         )

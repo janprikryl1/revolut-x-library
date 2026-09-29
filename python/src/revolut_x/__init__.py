@@ -44,8 +44,10 @@ from revolut_x.helpers import (
     FeeEstimate,
     OrderPayloadBuilder,
     build_limit_order,
+    build_maker_order,
     build_market_order,
     build_order,
+    calculate_maker_price,
     normalize_symbol,
 )
 from revolut_x.exceptions import (
@@ -57,7 +59,7 @@ from revolut_x.exceptions import (
     RevolutXError,
 )
 
-__version__ = "0.0.5"
+__version__ = "0.0.6"
 
 __all__ = [
     # Client
@@ -72,9 +74,11 @@ __all__ = [
     "FeeCalculator",
     "FeeEstimate",
     "normalize_symbol",
+    "calculate_maker_price",
     "build_order",
     "build_market_order",
     "build_limit_order",
+    "build_maker_order",
     # Type definitions
     "Balance",
     "Candle",
