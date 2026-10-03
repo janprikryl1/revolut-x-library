@@ -13,14 +13,29 @@
 - **Built-in Helpers** — `FeeCalculator` and `OrderPayloadBuilder` provide pre-submission rule validation and fee projections.
 - **100% Type Annotated** — Built with Python `TypedDict`, `Enum`, and modern type annotations for autocomplete in VS Code and PyCharm.
 - **Structured Exceptions** — Hierarchical error handling (`AuthenticationError`, `RateLimitError`, `ApiError`, `NetworkError`).
+- **AI Agent Skill** — Bundled Skill for AI assistants (Google Antigravity, Claude, Cursor) to automate exchange tasks. See [AI Agent Integration](guide/ai_agents.md).
 
 ---
 
-## Installation
+## Installation & Downloads
 
+### Package Installation
 ```bash
+# Standard PyPI release:
+pip install revolut-x-python
+
+# Or from TestPyPI:
 pip install -i https://test.pypi.org/simple/ revolut-x-python
+
+# Direct install from GitHub:
+pip install "git+https://github.com/janprikryl1/revolut-x-library.git#subdirectory=python"
 ```
+
+### Source Code & Downloads
+- **GitHub Repository**: [github.com/janprikryl1/revolut-x-library](https://github.com/janprikryl1/revolut-x-library)
+- **Direct ZIP Download**: [Download latest source (main.zip)](https://github.com/janprikryl1/revolut-x-library/archive/refs/heads/main.zip)
+- **AI Skill Specification**: [`.agents/skills/revolut-x-library/SKILL.md`](https://github.com/janprikryl1/revolut-x-library/tree/main/.agents/skills/revolut-x-library)
+
 
 ---
 
