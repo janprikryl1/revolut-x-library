@@ -30,11 +30,15 @@ When the skill is active, the AI assistant automatically understands:
 
 ---
 
-## Downloads & Repository Links
+## Downloads & AI Resources
 
-- **GitHub Repository**: [https://github.com/janprikryl1/revolut-x-library](https://github.com/janprikryl1/revolut-x-library)
-- **Download Source Code (ZIP)**: [Download revolut-x-library (main.zip)](https://github.com/janprikryl1/revolut-x-library/archive/refs/heads/main.zip)
-- **Skill File Direct Location**: `.agents/skills/revolut-x-library/SKILL.md`
+| Asset | Description | Direct Link |
+| :--- | :--- | :--- |
+| **`SKILL.md` (Raw)** | Core AI agent prompt and instructions | [Download SKILL.md](https://raw.githubusercontent.com/janprikryl1/revolut-x-python/main/.agents/skills/revolut-x-library/SKILL.md) |
+| **`types.md` (Raw)** | Types, enums, and response schemas | [Download types.md](https://raw.githubusercontent.com/janprikryl1/revolut-x-python/main/.agents/skills/revolut-x-library/references/types.md) |
+| **Skill Folder (GitHub)** | Interactive folder browser on GitHub | [View .agents/skills/revolut-x-library](https://github.com/janprikryl1/revolut-x-python/tree/main/.agents/skills/revolut-x-library/) |
+| **Repository (ZIP)** | Complete repository including skill & tests | [Download main.zip](https://github.com/janprikryl1/revolut-x-python/archive/refs/heads/main.zip) |
+| **PHP Sister Skill** | AI Skill for the PHP SDK | [View revolut-x-php Skill](https://github.com/janprikryl1/revolut-x-php/tree/main/.agents/skills/revolut-x-php/) |
 
 ---
 

@@ -15,9 +15,9 @@ Python SDK for the **Revolut X Crypto Exchange** REST API (v1.0).
 - **Python ≥ 3.10** required
 - **Dependencies**: `requests>=2.31.0`, `cryptography>=41.0.0`
 - **Source**: [python/src/revolut_x/](./../../python/src/revolut_x/)
-- **Online Documentation (GitHub Pages)**: [https://janprikryl1.github.io/revolut-x-library/](https://janprikryl1.github.io/revolut-x-library/)
-- **Repository**: [https://github.com/janprikryl1/revolut-x-library](https://github.com/janprikryl1/revolut-x-library)
-- **Download Source (ZIP)**: [Download revolut-x-library main.zip](https://github.com/janprikryl1/revolut-x-library/archive/refs/heads/main.zip)
+- **Online Documentation (GitHub Pages)**: [https://janprikryl1.github.io/revolut-x-python/](https://janprikryl1.github.io/revolut-x-python/)
+- **Repository**: [https://github.com/janprikryl1/revolut-x-python](https://github.com/janprikryl1/revolut-x-python)
+- **Sister SDK (PHP)**: [https://github.com/janprikryl1/revolut-x-php](https://github.com/janprikryl1/revolut-x-php)
 - **All numeric values from the API are strings** — use `Decimal` for precision
 
 ## Installation & Download
