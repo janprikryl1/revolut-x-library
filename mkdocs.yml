@@ -1,8 +1,8 @@
-site_name: Revolut X Multi-Language SDK
-site_description: Python and PHP SDKs for the Revolut X Crypto Exchange REST API (v1.0)
-site_url: https://janprikryl1.github.io/revolut-x-library/
-repo_name: janprikryl/revolut-x-library
-repo_url: https://github.com/janprikryl1/revolut-x-library
+site_name: Revolut X Python
+site_description: Python SDK for the Revolut X Crypto Exchange REST API (v1.0)
+site_url: https://janprikryl1.github.io/revolut-x-python/
+repo_name: janprikryl/revolut-x-python
+repo_url: https://github.com/janprikryl1/revolut-x-python
 copyright: "Copyright &copy; 2026 Jan Přikryl | Diplomová práce VŠB-TUO"
 
 theme:
@@ -43,31 +43,21 @@ markdown_extensions:
   - def_list
 
 nav:
-  - Domů: index.md
-  - Koncepty a Protokol:
-      - Ed25519 Autentizace: concepts/auth_ed25519.md
-      - 0% Maker Strategie: concepts/maker_strategy.md
-  - Python SDK:
-      - Rychlý start: python/quickstart.md
-      - Průvodci:
-          - Tržní data: python/guide/market_data.md
-          - Objednávky: python/guide/orders.md
-          - Účet a zůstatky: python/guide/account.md
-          - AI Agenti: python/guide/ai_agents.md
-      - API Reference:
-          - Klient (RevolutXClient): python/api/client.md
-          - Market Data API: python/api/market.md
-          - Orders API: python/api/orders.md
-          - Account API: python/api/account.md
-          - Helpers & Buildery: python/api/helpers.md
-          - Typy & Enumy: python/api/types.md
-          - Výjimky: python/api/exceptions.md
-  - PHP SDK:
-      - Rychlý start: php/quickstart.md
-      - Průvodci:
-          - Tržní data: php/guide/market_data.md
-          - Objednávky: php/guide/orders.md
-          - Účet a zůstatky: php/guide/account.md
-          - 0% Maker Strategie: php/guide/maker_strategy.md
-      - API Reference: php/api/reference.md
-  - AI Integrace: ai_agents.md
+  - Home: index.md
+  - Quick Start: quickstart.md
+  - User Guide:
+      - Public Market Data: guide/market_data.md
+      - Order Management: guide/orders.md
+      - Account & Balances: guide/account.md
+      - AI Agent Integration: guide/ai_agents.md
+  - Protocol Concepts:
+      - Ed25519 Authentication: concepts/auth_ed25519.md
+      - 0% Maker Strategy: concepts/maker_strategy.md
+  - API Reference:
+      - Client (RevolutXClient): api/client.md
+      - Market Data API: api/market.md
+      - Orders API: api/orders.md
+      - Account API: api/account.md
+      - Helpers & Builders: api/helpers.md
+      - Types & Enums: api/types.md
+      - Exceptions: api/exceptions.md

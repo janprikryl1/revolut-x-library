@@ -1,97 +1,81 @@
-# Revolut X Multi-Language Library
+# Revolut X Python SDK
 
-Multi-language SDK repository for interacting with the **Revolut X Crypto Exchange REST API** (API Version `1.0`).
+Python client library for the **Revolut X Crypto Exchange REST API (v1.0)**.
 
-📖 **Unified Documentation**: [janprikryl1.github.io/revolut-x-library](https://janprikryl1.github.io/revolut-x-library/)
+📖 **Documentation**: [janprikryl1.github.io/revolut-x-python](https://janprikryl1.github.io/revolut-x-python/)  
+🐘 **Looking for PHP?** See [revolut-x-php](https://github.com/janprikryl1/revolut-x-php).
 
 ---
 
-## Available SDKs
+## Features
 
-| Language | Directory | Package / Status | Documentation | API Version |
-| :--- | :--- | :--- | :--- | :--- |
-| **Python** | [`python/`](./python) | [`revolut-x-python`](./python) (`v0.0.6`) | [Python Docs](https://janprikryl1.github.io/revolut-x-library/python/quickstart/) | `1.0` |
-| **PHP** | [`php/`](./php) | [`janprikryl/revolutx`](./php) (`v0.1.0`) | [PHP Docs](https://janprikryl1.github.io/revolut-x-library/php/quickstart/) | `1.0` |
-| **TypeScript / Node.js** | `typescript/` | *Planned* | — | `1.0` |
-| **Go** | `go/` | *Planned* | — | `1.0` |
+- **Revolut X API v1.0** — Complete coverage of market data, order placement, balances, and transaction history.
+- **Ed25519 Authentication** — Cryptographic request signing using `cryptography` (PKCS#8 PEM).
+- **Smart Maker Strategy (0.00% fee)** — Automatic offset pricing and `post_only` execution to prevent taker fees (0.09%).
+- **Streaming Iterators** — `iter_candles()` and `iter_trades()` automatically handle cursor pagination and rate-limit delays.
+- **100% Type Annotated** — Built with Python `TypedDict`, `Enum`, and type annotations.
+- **AI Agent Skill** — Pre-packaged skill definition for AI coding assistants (Google Antigravity, Claude, Cursor).
+
+---
+
+## Installation
+
+```bash
+pip install revolut-x-python
+```
+
+Or install in development mode from source:
+
+```bash
+cd python
+pip install -e ".[dev,docs]"
+```
 
 ---
 
 ## Quickstart
 
-### Python SDK
-
-```bash
-cd python
-pip install .
-```
+### 1. Public Market Data (No API Key Required)
 
 ```python
 from revolut_x import RevolutXClient, Interval
 
-# Public data client (no credentials required)
 client = RevolutXClient()
 
 # Get BTC-EUR ticker
 ticker = client.get_ticker("BTC-EUR")
-print(f"BTC price: {ticker['last_price']} EUR")
+print(f"BTC Price: {ticker['last_price']} EUR")
 
 # Get 1-hour OHLCV candles
 candles = client.get_candles("BTC-EUR", Interval.HOUR_1)
 ```
 
-### PHP SDK
+### 2. Authenticated Trading & 0% Fee Maker Orders
 
-```bash
-cd php
-composer install
-```
+```python
+from revolut_x import RevolutXClient, OrderSide
 
-```php
-use RevolutX\Client;
-use RevolutX\Types\Interval;
+client = RevolutXClient(
+    api_key="your-api-key",
+    private_key_path="keys/private.pem",
+)
 
-// Public data client (no credentials required)
-$client = new Client();
-
-// Get BTC-EUR ticker
-$ticker = $client->getTicker('BTC-EUR');
-echo "BTC price: {$ticker['last_price']} EUR\n";
-
-// Get 1-hour OHLCV candles
-$candles = $client->getCandles('BTC-EUR', Interval::HOUR_1);
+# Submit zero-fee Maker limit order (post_only=True)
+order = client.place_maker_order(
+    symbol="BTC-EUR",
+    side=OrderSide.BUY,
+    quote_size="50.00",
+    offset="0.10",
+)
+print(f"Order ID: {order['venue_order_id']}")
 ```
 
 ---
 
-## Repository Structure
+## Running Tests
 
-Each language implementation lives in its own root subdirectory and follows that ecosystem's standard packaging layout. Documentation is unified at the repository root and deployed via GitHub Pages:
-
-```text
-revolut-x-library/
-├── .github/workflows/   # CI/CD and GitHub Pages deployment workflow
-├── docs/                # Unified documentation for Python & PHP
-├── mkdocs.yml           # Root MkDocs configuration
-├── README.md            # Monorepo overview
-├── CHANGELOG.md         # Monorepo changelog
-│
-├── python/              # Python SDK (PEP 517/621 src-layout)
-│   ├── pyproject.toml
-│   ├── README.md
-│   ├── examples/
-│   ├── src/revolut_x/
-│   └── tests/
-│
-├── php/                 # PHP SDK (Composer PSR-4 layout)
-│   ├── composer.json
-│   ├── phpunit.xml
-│   ├── README.md
-│   ├── examples/
-│   ├── src/
-│   └── tests/
-│
-└── ...                  # Future language implementations
+```bash
+pytest python/tests
 ```
 
 ---

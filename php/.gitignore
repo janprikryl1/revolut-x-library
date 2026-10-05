@@ -1,5 +1,0 @@
-vendor/
-.phpunit.result.cache
-.phpunit.cache/
-keys/
-.DS_Store
