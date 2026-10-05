@@ -38,6 +38,12 @@ node_modules/
 .next/
 out/
 
+# PHP
+php/vendor/
+vendor/
+.phpunit.result.cache
+.phpunit.cache/
+
 # IDE and Editors
 .idea/
 .vscode/
