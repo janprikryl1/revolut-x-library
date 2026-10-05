@@ -97,6 +97,7 @@ class RevolutXClient(MarketMixin, OrdersMixin, AccountMixin):
         request_delay: float = 0.85,
         timeout: int = 15,
         max_retries: int = 3,
+        timestamp_offset_ms: int = 0,
     ) -> None:
         # Load private key if credentials are provided
         private_key = None
@@ -116,11 +117,34 @@ class RevolutXClient(MarketMixin, OrdersMixin, AccountMixin):
             request_delay=request_delay,
             timeout=timeout,
             max_retries=max_retries,
+            timestamp_offset_ms=timestamp_offset_ms,
         )
 
         # Store for diagnostics
         self._api_key = api_key
         self._has_private_key = private_key is not None
+
+    @property
+    def timestamp_offset(self) -> int:
+        """Timestamp clock offset in milliseconds."""
+        return self._http.timestamp_offset_ms
+
+    @timestamp_offset.setter
+    def timestamp_offset(self, val: int) -> None:
+        self._http.timestamp_offset_ms = int(val)
+
+    @property
+    def timestamp_offset_ms(self) -> int:
+        """Alias for timestamp_offset."""
+        return self._http.timestamp_offset_ms
+
+    @timestamp_offset_ms.setter
+    def timestamp_offset_ms(self, val: int) -> None:
+        self._http.timestamp_offset_ms = int(val)
+
+    def sync_time(self) -> int:
+        """Synchronize timestamp offset with Revolut X server time."""
+        return self._http.sync_time()
 
     @property
     def is_authenticated(self) -> bool:

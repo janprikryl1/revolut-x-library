@@ -95,7 +95,8 @@ def sign_request(
     method: str,
     path: str,
     params: dict[str, Any] | None = None,
-    body: Any | None = None
+    body: Any | None = None,
+    timestamp_offset_ms: int = 0,
 ) -> dict[str, str]:
     """Sign a request and return the necessary authentication headers.
 
@@ -106,13 +107,14 @@ def sign_request(
         path: The request path.
         params: The query parameters.
         body: The request body.
+        timestamp_offset_ms: Optional offset in milliseconds to adjust local clock.
 
     Returns:
         A dictionary containing the authentication headers
             (X-Revx-API-Key, X-Revx-Timestamp, X-Revx-Signature) and Content-Type
             if a body is provided.
     """
-    timestamp_ms = str(int(time.time() * 1000))
+    timestamp_ms = str(int(time.time() * 1000) + int(timestamp_offset_ms))
     
     message = build_signature_message(
         timestamp_ms=timestamp_ms,

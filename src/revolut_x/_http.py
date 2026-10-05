@@ -1,6 +1,7 @@
 """Internal HTTP client module for Revolut X REST API requests."""
 
 from __future__ import annotations
+import email.utils
 import json
 import logging
 import time
@@ -38,6 +39,7 @@ class HttpClient:
         timeout: int = 15,
         max_retries: int = 3,
         user_agent: str = "revolut-x-python/0.1.0",
+        timestamp_offset_ms: int = 0,
     ):
         """Initialize the HTTP client.
 
@@ -50,6 +52,7 @@ class HttpClient:
             timeout (int): Timeout in seconds for HTTP requests.
             max_retries (int): Maximum number of retry attempts for 429 and network errors.
             user_agent (str): User agent string for the requests.
+            timestamp_offset_ms (int): Clock offset in milliseconds for request signing.
         """
         self.base_url = base_url.rstrip("/")
         self.api_version = api_version
@@ -58,10 +61,31 @@ class HttpClient:
         self.request_delay = request_delay
         self.timeout = timeout
         self.max_retries = max_retries
+        self.timestamp_offset_ms = timestamp_offset_ms
+        self._time_synced = False
 
         self.session = requests.Session()
         self.session.headers.update({"User-Agent": user_agent})
         self._last_request_time = 0.0
+
+    def sync_time(self) -> int:
+        """Synchronize timestamp offset with Revolut X server time using the Date response header."""
+        try:
+            resp = self.session.head(
+                f"{self.base_url}/{self.api_version}/public/configuration/currencies",
+                timeout=self.timeout,
+            )
+            date_header = resp.headers.get("Date")
+            if date_header:
+                parsed = email.utils.parsedate_to_datetime(date_header)
+                server_ms = int(parsed.timestamp() * 1000)
+                local_ms = int(time.time() * 1000)
+                self.timestamp_offset_ms = server_ms - local_ms - 500
+                logger.debug("Synchronized time offset: %d ms", self.timestamp_offset_ms)
+                return self.timestamp_offset_ms
+        except Exception as exc:
+            logger.warning("Could not sync server time: %s", exc)
+        return self.timestamp_offset_ms
 
     def _rate_limit_wait(self) -> None:
         """Enforce spacing between outgoing requests to avoid 429 Rate Limits."""
@@ -104,6 +128,10 @@ class HttpClient:
         api_path = f"/api/{self.api_version}{endpoint}"
         full_url = f"{self.base_url}/{self.api_version}{endpoint}"
 
+        if authenticated and not getattr(self, "_time_synced", False) and self.timestamp_offset_ms == 0:
+            self._time_synced = True
+            self.sync_time()
+
         headers: dict[str, str] = {}
         if authenticated:
             if not self.api_key or not self.private_key:
@@ -111,16 +139,6 @@ class HttpClient:
                     f"Authentication required for {endpoint}, but api_key or private_key is not configured. "
                     "Please initialize the client with both api_key and private_key."
                 )
-            
-            auth_headers = sign_request(
-                api_key=self.api_key,
-                private_key=self.private_key,
-                method=method,
-                path=api_path,
-                params=params,
-                body=json_body
-            )
-            headers.update(auth_headers)
 
         body_kwargs: dict[str, Any] = {}
         if json_body is not None:
@@ -129,6 +147,18 @@ class HttpClient:
 
         wait_sec: float | None = None
         for attempt in range(1, self.max_retries + 1):
+            if authenticated:
+                auth_headers = sign_request(
+                    api_key=self.api_key,
+                    private_key=self.private_key,
+                    method=method,
+                    path=api_path,
+                    params=params,
+                    body=json_body,
+                    timestamp_offset_ms=self.timestamp_offset_ms,
+                )
+                headers.update(auth_headers)
+
             self._rate_limit_wait()
             try:
                 response = self.session.request(
@@ -142,6 +172,17 @@ class HttpClient:
                 
                 status = response.status_code
                 
+                # Check response Date header for background drift correction
+                date_hdr = response.headers.get("Date")
+                if date_hdr:
+                    try:
+                        p = email.utils.parsedate_to_datetime(date_hdr)
+                        diff = int(p.timestamp() * 1000) - int(time.time() * 1000)
+                        if abs(diff - self.timestamp_offset_ms) > 3000:
+                            self.timestamp_offset_ms = diff - 500
+                    except Exception:
+                        pass
+
                 # Handle Rate Limiting (429)
                 if status == 429:
                     if attempt == self.max_retries:
@@ -169,6 +210,21 @@ class HttpClient:
                     data = response.json()
                 except Exception:
                     data = response.text
+
+                # Handle timestamp drift error (409 Request timestamp is in the future)
+                if status == 409 and isinstance(data, dict):
+                    msg = str(data.get("message", "")).lower()
+                    if "future" in msg or "timestamp" in data:
+                        server_ts = int(data.get("timestamp") or 0)
+                        if server_ts:
+                            self.timestamp_offset_ms = server_ts - int(time.time() * 1000) - 1000
+                        else:
+                            self.sync_time()
+                        logger.warning(
+                            "Timestamp clock drift detected on %s (HTTP 409). Adjusted offset to %d ms. Retrying...",
+                            endpoint, self.timestamp_offset_ms
+                        )
+                        continue
 
                 # Handle other status codes
                 if status in (401, 403):

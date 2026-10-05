@@ -24,12 +24,6 @@ Python client library for the **Revolut X Crypto Exchange REST API (v1.0)**.
 pip install revolut-x-python
 ```
 
-Or install in development mode from source:
-
-```bash
-pip install -e ".[dev,docs]"
-```
-
 ---
 
 ## Quickstart
