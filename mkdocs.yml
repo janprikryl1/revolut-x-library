@@ -6,11 +6,57 @@ repo_url: https://github.com/janprikryl1/revolut-x-python
 copyright: "Copyright &copy; 2026 Jan Přikryl | Diplomová práce VŠB-TUO"
 
 theme:
-  name: ivory
+  name: material
   logo: assets/logo.png
+  favicon: assets/logo.png
+  palette:
+    - scheme: default
+      primary: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
 
 plugins:
   - search
+  - i18n:
+      languages:
+        - locale: en
+          name: English
+          default: true
+        - locale: cs
+          name: Čeština
+          site_description: Python SDK pro Revolut X Crypto Exchange REST API (v1.0)
+          nav_translations:
+            Home: Domů
+            Quick Start: Rychlý start
+            User Guide: Uživatelská příručka
+            Public Market Data: Veřejná tržní data
+            Order Management: Správa objednávek
+            Account & Balances: Účet a zůstatky
+            AI Agent Integration: Integrace AI agentů
+            Protocol Concepts: Koncepty protokolu
+            Ed25519 Authentication: Autentizace Ed25519
+            0% Maker Strategy: 0% Maker strategie
+            API Reference: API Reference
+            Client (RevolutXClient): Klient (RevolutXClient)
+            Market Data API: Market Data API
+            Orders API: Orders API
+            Account API: Account API
+            Helpers & Builders: Pomocné třídy a buildery
+            Types & Enums: Typy a enumy
+            Exceptions: Výjimky
   - mkdocstrings:
       handlers:
         python:
