@@ -1,6 +1,7 @@
 {
     "name": "janprikryl/revolutx",
     "description": "PHP SDK for the Revolut X Crypto Exchange REST API (v1.0)",
+    "version": "0.0.6",
     "type": "library",
     "license": "MIT",
     "authors": [
