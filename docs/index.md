@@ -3,7 +3,10 @@
 
 ---
 
-## Key Highlights
+!!! tip "Multi-Language Ecosystem"
+    Looking for the **PHP SDK**? Check out the [Revolut X PHP Documentation](https://janprikryl1.github.io/revolut-x-php/) or the [PHP GitHub Repository](https://github.com/janprikryl1/revolut-x-php).
+
+---
 
 - **API Version 1.0 Support** — Targets Revolut X REST API `1.0` with configurable versioning.
 - **Ed25519 Authentication** — Industry-standard elliptic curve signing for private endpoints.
