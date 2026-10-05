@@ -39,7 +39,6 @@ node_modules/
 out/
 
 # PHP
-php/vendor/
 vendor/
 .phpunit.result.cache
 .phpunit.cache/

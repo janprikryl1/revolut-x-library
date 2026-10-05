@@ -14,7 +14,7 @@ Python SDK for the **Revolut X Crypto Exchange** REST API (v1.0).
 
 - **Python ≥ 3.10** required
 - **Dependencies**: `requests>=2.31.0`, `cryptography>=41.0.0`
-- **Source**: [python/src/revolut_x/](./../../python/src/revolut_x/)
+- **Source**: [src/revolut_x/](./../../src/revolut_x/)
 - **Online Documentation (GitHub Pages)**: [https://janprikryl1.github.io/revolut-x-python/](https://janprikryl1.github.io/revolut-x-python/)
 - **Repository**: [https://github.com/janprikryl1/revolut-x-python](https://github.com/janprikryl1/revolut-x-python)
 - **Sister SDK (PHP)**: [https://github.com/janprikryl1/revolut-x-php](https://github.com/janprikryl1/revolut-x-php)
@@ -33,13 +33,13 @@ pip install -i https://test.pypi.org/simple/ revolut-x-python
 
 ### 2. Direct Install from GitHub
 ```bash
-pip install "git+https://github.com/janprikryl1/revolut-x-library.git#subdirectory=python"
+pip install "git+https://github.com/janprikryl1/revolut-x-library.git"
 ```
 
 ### 3. Clone Repository & Install from Source
 ```bash
 git clone https://github.com/janprikryl1/revolut-x-library.git
-cd revolut-x-library/python
+cd revolut-x-library
 pip install .
 ```
 

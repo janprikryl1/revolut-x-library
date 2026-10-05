@@ -60,7 +60,7 @@ plugins:
   - mkdocstrings:
       handlers:
         python:
-          paths: [python/src]
+          paths: [src]
           options:
             docstring_style: google
             docstring_section_style: table

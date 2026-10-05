@@ -1,7 +1,7 @@
 # Types Reference
 
 Complete type definitions for the revolut-x-python SDK. All types are defined in
-[`types.py`](file:///c:/Users/jan.prikryl/Desktop/revolut-x-library/python/src/revolut_x/types.py).
+[`types.py`](./../../../src/revolut_x/types.py).
 Online interactive documentation: [https://janprikryl1.github.io/revolut-x-library/api/types/](https://janprikryl1.github.io/revolut-x-library/api/types/)
 
 ## Enums

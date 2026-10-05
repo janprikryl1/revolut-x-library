@@ -27,7 +27,6 @@ pip install revolut-x-python
 Or install in development mode from source:
 
 ```bash
-cd python
 pip install -e ".[dev,docs]"
 ```
 
@@ -75,7 +74,7 @@ print(f"Order ID: {order['venue_order_id']}")
 ## Running Tests
 
 ```bash
-pytest python/tests
+pytest tests
 ```
 
 ---
@@ -92,4 +91,4 @@ Tato knihovna vznikla jako součást **diplomové práce** na **VŠB – Technic
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](python/LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
