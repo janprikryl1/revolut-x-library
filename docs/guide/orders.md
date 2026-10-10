@@ -83,7 +83,7 @@ from revolut_x import RevolutXClient, OrderSide, OrderType, TimeInForce
 
 # Buy BTC for 50 EUR at custom limit price 70,000 EUR
 order = client.place_order(
-    symbol="BTC-EUR",
+    "BTC-EUR",
     side=OrderSide.BUY,
     order_type=OrderType.LIMIT,
     price="70000.00",
@@ -103,7 +103,7 @@ from revolut_x import RevolutXClient, OrderSide, OrderType
 
 # Market buy spending 100 EUR
 market_buy = client.place_order(
-    symbol="BTC-EUR",
+    "BTC-EUR",
     side=OrderSide.BUY,
     order_type=OrderType.MARKET,
     quote_size="100.00",
@@ -111,7 +111,7 @@ market_buy = client.place_order(
 
 # Market sell selling exactly 0.002 BTC
 market_sell = client.place_order(
-    symbol="BTC-EUR",
+    "BTC-EUR",
     side=OrderSide.SELL,
     order_type=OrderType.MARKET,
     base_size="0.002",

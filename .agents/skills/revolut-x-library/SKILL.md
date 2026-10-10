@@ -33,13 +33,13 @@ pip install -i https://test.pypi.org/simple/ revolut-x-python
 
 ### 2. Direct Install from GitHub
 ```bash
-pip install "git+https://github.com/janprikryl1/revolut-x-library.git"
+pip install "git+https://github.com/janprikryl1/revolut-x-python.git"
 ```
 
 ### 3. Clone Repository & Install from Source
 ```bash
-git clone https://github.com/janprikryl1/revolut-x-library.git
-cd revolut-x-library
+git clone https://github.com/janprikryl1/revolut-x-python.git
+cd revolut-x-python
 pip install .
 ```
 
@@ -74,8 +74,23 @@ client = RevolutXClient(
 | `request_delay` | `float` | `0.85` | Min seconds between requests |
 | `timeout` | `int` | `15` | HTTP timeout (seconds) |
 | `max_retries` | `int` | `3` | Retries on 429 / network errors |
+| `timestamp_offset_ms` | `int` | `0` | Manual clock offset (ms) for request signing |
 
 `client.is_authenticated → bool` — `True` if both API key and signing key are configured.
+
+### Clock Synchronization
+
+Signed requests carry `X-Revx-Timestamp`; a local clock that drifts more than a
+few seconds makes the exchange reject them. The client handles this itself —
+before the first authenticated request it reads the server `Date` header and
+stores an offset, and it re-syncs automatically on an HTTP 409 timestamp error.
+Only touch these if you need to override that:
+
+```python
+client.sync_time()              # force a re-sync, returns the new offset in ms
+client.timestamp_offset         # → int (ms); alias: client.timestamp_offset_ms
+client.timestamp_offset = -500  # manual override
+```
 
 ---
 
@@ -117,22 +132,111 @@ book = client.get_order_book("BTC-EUR")            # → OrderBook
 # book["bids"][0] → {"p": "95000.00", "q": "0.5", "s": "BUYI", "pc": "EUR", ...}
 # price = book["bids"][0]["p"]   quantity = book["bids"][0]["q"]
 
-# Candles (OHLCV) — a single call must span at most 1000 candles,
-# a wider since/until window is rejected with HTTP 400 (not truncated)
+# Candles (OHLCV) — see the dedicated section below
+candles = client.get_candles("BTC-EUR", Interval.HOUR_1)
+
+# Public trades — single page + cursor.
+# start_date / end_date are Unix MILLISECONDS (int), never date strings —
+# a string like "2024-01-01" raises ValueError.
+import time
+day_ago = int(time.time() * 1000) - 86_400_000
+trades, next_cursor = client.get_trades("BTC-EUR", start_date=day_ago, limit=100)
+
+# Auto-paginating trade iterator
+for trade in client.iter_trades("BTC-EUR", start_date=day_ago):
+    print(trade["price"], trade["side"])
+```
+
+---
+
+## Candles (OHLCV)
+
+```python
 candles = client.get_candles("BTC-EUR", Interval.HOUR_1)
 candles = client.get_candles("BTC-EUR", Interval.DAY_1, since=ts_ms, until=ts_ms)
 
-# Auto-paginating candle iterator (all candles in range)
+# Auto-paginating iterator — use for any window wider than 1000 candles
 for c in client.iter_candles("BTC-EUR", Interval.MIN_15, since=start, until=end):
     print(c["close"])
-
-# Public trades — single page + cursor
-trades, next_cursor = client.get_trades("BTC-EUR", start_date="2024-01-01", limit=100)
-
-# Auto-paginating trade iterator
-for trade in client.iter_trades("BTC-EUR", start_date="2024-01-01"):
-    print(trade["price"], trade["side"])
 ```
+
+Each candle is a dict — **not** a list or tuple:
+
+```python
+{"start": 1788058800000, "open": "67419.13", "high": "67547.81",
+ "low": "67356.94", "close": "67469.02", "volume": "0.09977242"}
+```
+
+- `start` — candle **open** time, `int` Unix **milliseconds**, always **UTC**
+- `open` / `high` / `low` / `close` / `volume` — **strings**; `volume` is in the
+  base currency. Wrap in `Decimal`, never `float`.
+- `since` / `until` are also Unix **milliseconds** (`int`), inclusive on both ends.
+
+Three things that make naive candle code wrong:
+
+1. **No `since` ≠ "today".** A bare `get_candles(sym, interval)` returns the most
+   recent **1000 candles** (for `HOUR_1` that is ~41 days, not today). Always pass
+   an explicit `since` when the user asks for a specific period.
+2. **The last candle is still forming.** Its `high`/`low`/`close`/`volume` keep
+   changing until the interval ends, so two runs minutes apart legitimately
+   return different values for it. Label it or drop it — never present it as a
+   closed candle.
+3. **A single call spans at most 1000 candles.** A wider `since`/`until` window is
+   rejected with HTTP 400 (`Lookup window interval exceeds the limit of 1000
+   candles`) — it is *not* silently truncated. Use `iter_candles` instead.
+
+### Reproducible recipe: candles for a calendar day
+
+Use this shape whenever the user asks for "today" / "yesterday" / a given date.
+It pins the day to UTC, converts `start` to a readable timestamp, and keeps the
+unfinished candle visibly separate — so the same request gives the same answer
+regardless of who runs it.
+
+```python
+import time
+from datetime import datetime, timezone, time as dtime
+from decimal import Decimal
+from revolut_x import RevolutXClient, Interval
+
+client = RevolutXClient()
+interval = Interval.HOUR_1
+
+# The exchange timestamps everything in UTC — define the day in UTC too,
+# otherwise the row set shifts with the machine's local timezone.
+day = datetime.now(timezone.utc).date()                      # or date(2026, 10, 10)
+midnight = datetime.combine(day, dtime.min, tzinfo=timezone.utc)
+since = int(midnight.timestamp() * 1000)
+until = min(since + 86_400_000 - 1, int(time.time() * 1000))
+
+candles = client.get_candles("BTC-EUR", interval, since=since, until=until)
+
+interval_ms = int(interval) * 60_000
+now_ms = int(time.time() * 1000)
+closed = [c for c in candles if c["start"] + interval_ms <= now_ms]
+forming = [c for c in candles if c["start"] + interval_ms > now_ms]
+
+for c in closed:
+    opened = datetime.fromtimestamp(c["start"] / 1000, tz=timezone.utc)
+    print(f"{opened:%Y-%m-%d %H:%M} UTC  O={c['open']:>12} H={c['high']:>12} "
+          f"L={c['low']:>12} C={c['close']:>12} V={c['volume']:>14}")
+
+# Daily aggregate over CLOSED candles only — reproducible
+if closed:
+    print("open  ", closed[0]["open"])
+    print("high  ", max(Decimal(c["high"]) for c in closed))
+    print("low   ", min(Decimal(c["low"]) for c in closed))
+    print("close ", closed[-1]["close"])
+    print("volume", sum(Decimal(c["volume"]) for c in closed))
+
+for c in forming:
+    opened = datetime.fromtimestamp(c["start"] / 1000, tz=timezone.utc)
+    print(f"{opened:%H:%M} UTC — in progress, not final: C={c['close']}")
+```
+
+Output conventions to follow unless the user asks otherwise: print a table to
+stdout (don't export a file), timestamps as `YYYY-MM-DD HH:MM` **UTC** (never raw
+epoch numbers), prices and volume verbatim as returned by the API — formatting a
+`str` price through `float` loses precision.
 
 ---
 
@@ -164,8 +268,10 @@ order = client.place_maker_order("BTC-EUR", OrderSide.BUY, price="94000", base_s
 # Calculate optimal maker price without placing order
 price = client.calculate_maker_price("BTC-EUR", OrderSide.BUY, offset="0.10", tick_size="0.01")
 
-# Generic place_order accepts either individual args or a pre-built payload
-order = client.place_order("BTC-EUR", OrderSide.BUY, OrderType.MARKET, quote_size="100")
+# Generic place_order accepts either individual args or a pre-built payload.
+# Only symbol and side are positional — everything else is KEYWORD-ONLY.
+order = client.place_order("BTC-EUR", OrderSide.BUY, order_type=OrderType.MARKET, quote_size="100")
+order = client.place_order("BTC-EUR", OrderSide.BUY, order_type="limit", price="94000", quote_size="50")
 # or:
 payload = build_market_order("BTC-EUR", OrderSide.BUY, quote_size="100")
 order = client.place_order(payload)
@@ -370,11 +476,9 @@ For full type definitions, see [references/types.md](./references/types.md).
 ## Development & Documentation
 
 ```bash
-cd python
-
 # Development install (tests + dev tools)
 pip install -e ".[dev]"
-pytest                      # run test suite (20 tests)
+pytest                      # run test suite (43 tests)
 
 # Documentation install & commands
 pip install -e ".[docs]"
@@ -382,6 +486,6 @@ mkdocs serve                # local live preview at http://127.0.0.1:8000
 mkdocs build                # build static HTML to site/
 mkdocs gh-deploy            # deploy static docs to GitHub Pages
 
-# Online Docs: https://janprikryl1.github.io/revolut-x-library/
-# GitHub Repo: https://github.com/janprikryl1/revolut-x-library
+# Online Docs: https://janprikryl1.github.io/revolut-x-python/
+# GitHub Repo: https://github.com/janprikryl1/revolut-x-python
 ```

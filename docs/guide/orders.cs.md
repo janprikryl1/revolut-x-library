@@ -81,7 +81,7 @@ from revolut_x import RevolutXClient, OrderSide, OrderType, TimeInForce
 
 # Nákup BTC za 50 EUR při limitní ceně 70 000 EUR
 order = client.place_order(
-    symbol="BTC-EUR",
+    "BTC-EUR",
     side=OrderSide.BUY,
     order_type=OrderType.LIMIT,
     price="70000.00",
@@ -101,7 +101,7 @@ from revolut_x import RevolutXClient, OrderSide, OrderType
 
 # Tržní nákup za 100 EUR
 market_buy = client.place_order(
-    symbol="BTC-EUR",
+    "BTC-EUR",
     side=OrderSide.BUY,
     order_type=OrderType.MARKET,
     quote_size="100.00",
@@ -109,7 +109,7 @@ market_buy = client.place_order(
 
 # Tržní prodej přesně 0.002 BTC
 market_sell = client.place_order(
-    symbol="BTC-EUR",
+    "BTC-EUR",
     side=OrderSide.SELL,
     order_type=OrderType.MARKET,
     base_size="0.002",

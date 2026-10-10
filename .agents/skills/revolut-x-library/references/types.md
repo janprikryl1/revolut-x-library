@@ -45,13 +45,18 @@ class Interval(int, Enum):
 
 ```python
 class Candle(TypedDict):
-    start: int       # Unix timestamp (ms), candle open time
+    start: int       # Unix timestamp (ms), candle open time — always UTC
     open: str
     high: str
     low: str
     close: str
     volume: str      # Base currency volume
 ```
+
+The newest candle returned is the **currently forming** one: its `high`, `low`,
+`close` and `volume` keep changing until the interval ends, so repeated calls
+legitimately return different values for it. Filter it out with
+`c["start"] + interval_ms <= now_ms` before computing aggregates.
 
 ### Trade
 

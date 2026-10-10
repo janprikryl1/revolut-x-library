@@ -34,9 +34,9 @@ docs = [
 ]
 
 [project.urls]
-Homepage = "https://janprikryl1.github.io/revolut-x-library/"
-Repository = "https://github.com/janprikryl1/revolut-x-library"
-Issues = "https://github.com/janprikryl1/revolut-x-library/issues"
+Homepage = "https://janprikryl1.github.io/revolut-x-python/"
+Repository = "https://github.com/janprikryl1/revolut-x-python"
+Issues = "https://github.com/janprikryl1/revolut-x-python/issues"
 
 [tool.setuptools.dynamic]
 # Single source of truth — bump src/revolut_x/_version.py only.
