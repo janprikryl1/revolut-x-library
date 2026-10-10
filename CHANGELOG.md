@@ -7,30 +7,95 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased]
+## [0.1.0] - 2026-10-10
+
+Correctness release. Two public methods were unusable as shipped, and several
+declared types did not match what the exchange actually returns. Every item
+below was verified against the live Revolut X API.
+
+### Fixed
+- **`iter_candles()` crashed on page-aligned ranges**: any window that was an
+  exact multiple of 1000 candles ended with a request where `since == until`,
+  which the exchange rejects with HTTP 400 (`Invalid interval: 'until' is
+  before 'since'`). Windows of 1000/2000/3000 candles failed; 999/1500 worked.
+  Pagination now walks fixed windows forward instead of chaining off the last
+  returned candle, which also makes it immune to gaps in the series (an
+  illiquid pair with no trades in an interval used to end iteration early).
+  Guaranteed: no candle yielded twice, none past `until`.
+- **`get_trades()` / `iter_trades()` failed out of the box**: the default
+  `limit` was 1900, but `/public/trades/all` accepts only **1–100** and rejects
+  anything larger with HTTP 400 (`Limit must be between 1 and 100`). The
+  default is now 100 and out-of-range values are clamped into the accepted
+  range.
+- **Query parameters are now sorted before being sent**: the canonical
+  signature message sorts them alphabetically, while `requests` serialised them
+  in insertion order, so the signed string and the string on the wire could
+  differ for authenticated paginated calls (`get_historical_orders`,
+  `get_transactions`, `get_account_trades` when a `cursor` was present).
+
+### Changed
+- **`OrderBook` type corrected**: levels are dictionaries, **not**
+  `[price, quantity]` pairs. Added `OrderBookLevel` (exported from
+  `revolut_x`) documenting all 13 fields the venue returns; read the price from
+  `['p']` and the quantity from `['q']`. The previous shape made every
+  documented order-book example raise `KeyError` or `ValueError`.
+- **`Ticker` type corrected**: `high`, `low` and `volume` do not exist in the
+  response — the real fields are `high_24h`, `low_24h` and `volume_24h`. Added
+  the missing `mid`, `index_price`, `price_change_24h`, `quote_volume_24h` and
+  `region`.
+- **`Trade` type**: added the `region` field returned by the API.
+- **`get_order_book(depth=...)`**: documented that the exchange currently
+  ignores this argument and always returns 5 levels per side. The parameter is
+  kept so deeper books are picked up automatically if that changes.
+- **`get_candles()` docstring**: a window wider than 1000 candles is a hard
+  HTTP 400, not a silent truncation. The previous example (`since` three years
+  in the past) could not succeed.
+- **Single source of truth for the version**: `pyproject.toml`,
+  `revolut_x.__version__` and the default `User-Agent` now all resolve to
+  `revolut_x._version.__version__`. They had drifted to three different values
+  (0.0.8 / 0.0.6 / 0.1.0 respectively).
+- **Documentation**: translated the remaining Czech text in the English guides
+  (`index.md`, `concepts/auth_ed25519.md`, `concepts/maker_strategy.md`,
+  `guide/market_data.md`) left over from the i18n migration.
+- **AI Agent Skill**: corrected the order-book and ticker shapes in
+  `.agents/skills/revolut-x-library/`, which had been teaching assistants the
+  wrong field names.
 
 ### Added
-- **PHP SDK (`php/`)**: Initial implementation of the Revolut X Crypto Exchange REST API PHP SDK (`janprikryl/revolutx`):
-  - **Client (`Client` / `RevolutXClient`)**: Unified client combining public and authenticated endpoints.
-  - **Ed25519 Authentication (`Signer`)**: Native cryptographic request signing using PHP's `ext-sodium`.
-  - **HTTP Transport (`HttpClient`)**: Native cURL layer with automatic rate limiting (1 req/s), 429 retry backoff, and exception mapping.
-  - **Market API (`MarketTrait`)**: Endpoints for pairs, currencies, tickers, order book, OHLCV candles, and public trades.
-  - **Orders API (`OrdersTrait`)**: Market/Limit order execution, order fills, active and historical order querying, and cancellation.
-  - **Account API (`AccountTrait`)**: Account balances, ledger transaction history, and private trade history.
-  - **Helpers (`MakerOrderStrategy`, `FeeCalculator`, `OrderPayloadBuilder`, `SymbolNormalizer`)**: 0% Maker fee calculation, order payload validation, and symbol normalization.
-  - **Types & Enums (`Types/`)**: Class-based enums compatible with PHP 8.0+ (`OrderSide`, `OrderType`, `TimeInForce`, `Interval`) and `FeeEstimate` DTO.
-  - **Structured Exceptions (`Exceptions/`)**: Full exception hierarchy (`AuthenticationException`, `RateLimitException`, `ApiException`, `OrderValidationException`, `NetworkException`).
-  - **Unit Tests (`tests/`)**: Complete test suite using PHPUnit covering authentication, builders, maker strategy, fee math, and client behavior (28 tests, 81 assertions).
-  - **Examples (`examples/`)**: Executable scripts demonstrating public data, order placement, maker strategy, and fee calculations.
-- **Unified Multi-Language Documentation**:
-  - Centralized documentation from `python/` to repository root (`docs/`, `mkdocs.yml`) covering both Python and PHP SDKs on a single GitHub Pages website.
-  - Added comprehensive PHP guides (Quickstart, Market Data, Orders, Account, Maker Strategy, API Reference).
-  - Added shared API and protocol concepts (`docs/concepts/auth_ed25519.md`, `docs/concepts/maker_strategy.md`).
-  - Updated GitHub Actions workflow (`.github/workflows/docs.yml`) to build and deploy the unified documentation on GitHub Pages.
-- **AI Agent Skill**: Added Antigravity / AI Agent integration skill definition and types reference (`.agents/skills/revolut-x-library/`) for automated market interaction and coding assistance ([`c586fef`](https://github.com/janprikryl1/revolut-x-library/commit/c586feffa491bfde7c63b891893746c9571cd68d)).
-- **Documentation**: Added AI Agent Integration guide (`docs/ai_agents.md`) and updated MkDocs navigation.
+- **Tests**: `tests/test_market.py` — 7 tests covering candle pagination
+  (page-aligned windows, exact range coverage, no overshoot past `until`, gap
+  tolerance), the trades `limit` bound, and order-book pass-through. The suite
+  is now 43 tests.
 
 ---
+
+## [0.0.8] - 2026-10-05
+
+### Added
+- **Timestamp synchronisation**: `sync_time()` derives a clock offset from the
+  server `Date` header, with automatic drift correction on HTTP 409 and a
+  `timestamp_offset_ms` client option, so request signing survives a skewed
+  local clock ([`d9c5127`](https://github.com/janprikryl1/revolut-x-library/commit/d9c5127)).
+
+---
+
+## [0.0.7] - 2026-10-05
+
+### Changed
+- **Repository restructured**: the Python SDK moved from `python/` to the
+  repository root (`src/`, `tests/`, `examples/`), so the package builds from
+  the top level ([`52af8e3`](https://github.com/janprikryl1/revolut-x-library/commit/52af8e3)).
+- **PHP SDK removed** from this repository; it now lives in
+  [revolut-x-php](https://github.com/janprikryl1/revolut-x-php).
+
+### Added
+- **Unified multi-language documentation**: MkDocs site with English and Czech
+  (`mkdocs-static-i18n`, Material theme), shared protocol concepts
+  (`docs/concepts/auth_ed25519.md`, `docs/concepts/maker_strategy.md`), and a
+  GitHub Actions workflow deploying to GitHub Pages.
+- **AI Agent Skill**: skill definition and types reference
+  (`.agents/skills/revolut-x-library/`) for AI coding assistants
+  ([`c586fef`](https://github.com/janprikryl1/revolut-x-library/commit/c586feffa491bfde7c63b891893746c9571cd68d)).
 
 ## [0.0.6] - 2026-09-29
 

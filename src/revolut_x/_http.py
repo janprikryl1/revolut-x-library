@@ -9,9 +9,14 @@ from typing import Any
 import requests
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from revolut_x._auth import sign_request
+from revolut_x._version import __version__
 from revolut_x.exceptions import ApiError, AuthenticationError, NetworkError, RateLimitError
 
 logger = logging.getLogger(__name__)
+
+#: Default User-Agent sent to the exchange. Derived from the package version so
+#: it cannot drift out of sync with the actual release.
+DEFAULT_USER_AGENT = f"revolut-x-python/{__version__}"
 
 
 class HttpClient:
@@ -38,7 +43,7 @@ class HttpClient:
         request_delay: float = 0.85,
         timeout: int = 15,
         max_retries: int = 3,
-        user_agent: str = "revolut-x-python/0.1.0",
+        user_agent: str = DEFAULT_USER_AGENT,
         timestamp_offset_ms: int = 0,
     ):
         """Initialize the HTTP client.

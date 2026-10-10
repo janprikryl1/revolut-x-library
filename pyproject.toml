@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "revolut-x-python"
-version = "0.0.8"
+dynamic = ["version"]
 description = "Python SDK for the Revolut X Crypto Exchange REST API (v1.0)"
 readme = "README.md"
 license = "MIT"
@@ -37,6 +37,10 @@ docs = [
 Homepage = "https://janprikryl1.github.io/revolut-x-library/"
 Repository = "https://github.com/janprikryl1/revolut-x-library"
 Issues = "https://github.com/janprikryl1/revolut-x-library/issues"
+
+[tool.setuptools.dynamic]
+# Single source of truth — bump src/revolut_x/_version.py only.
+version = { attr = "revolut_x._version.__version__" }
 
 [tool.setuptools.packages.find]
 where = ["src"]

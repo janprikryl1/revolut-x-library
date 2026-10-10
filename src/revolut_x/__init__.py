@@ -21,6 +21,7 @@ For full documentation, see https://github.com/janprikryl/revolut-x-python
 """
 
 from __future__ import annotations
+from revolut_x._version import __version__
 from revolut_x.client import RevolutXClient
 from revolut_x.types import (
     OrderSide,
@@ -60,9 +61,9 @@ from revolut_x.exceptions import (
     RevolutXError,
 )
 
-__version__ = "0.0.8"
-
 __all__ = [
+    # Metadata
+    "__version__",
     # Client
     "RevolutXClient",
     # Enums

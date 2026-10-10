@@ -20,9 +20,22 @@ Python client library for the **Revolut X Crypto Exchange REST API (v1.0)**.
 
 ## Installation
 
+The package is published to **TestPyPI**, so the index has to be given
+explicitly — a plain `pip install revolut-x-python` will not find it:
+
 ```bash
-pip install revolut-x-python
+pip install --extra-index-url https://test.pypi.org/simple/ revolut-x-python
 ```
+
+In a `requirements.txt`:
+
+```
+--extra-index-url https://test.pypi.org/simple/
+revolut-x-python>=0.1.0
+```
+
+> `--extra-index-url` (rather than `--index-url`) keeps PyPI available for the
+> `requests` and `cryptography` dependencies, which are not on TestPyPI.
 
 ---
 
