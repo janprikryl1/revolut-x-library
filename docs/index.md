@@ -69,8 +69,8 @@ print(f"Order ID: {order['venue_order_id']}")
 
 ## Reference
 
-Tato knihovna vznikla jako součást **diplomové práce** na **VŠB – Technické univerzitě Ostrava** (Fakulta elektrotechniky a informatiky).
+This library was created as part of a **master's thesis** at **VSB – Technical University of Ostrava** (Faculty of Electrical Engineering and Computer Science).
 
-- VŠB – Technická univerzita Ostrava, fakulta elektrotechniky a informatiky
-- **Typ práce**: Diplomová práce / Master's Thesis
-- **Autor**: Bc. Jan Přikryl
+- VSB – Technical University of Ostrava, Faculty of Electrical Engineering and Computer Science
+- **Work type**: Master's Thesis
+- **Author**: Bc. Jan Přikryl

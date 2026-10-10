@@ -1,40 +1,40 @@
-# Smart Maker Order Strategie (0.00% poplatek)
+# Smart Maker Order Strategy (0.00% fee)
 
-Jednou z největších výhod obchodování na burze **Revolut X** je cenová struktura poplatků:
+One of the biggest advantages of trading on the **Revolut X** exchange is its fee structure:
 
-| Typ exekuce | Poplatek | Popis |
+| Execution type | Fee | Description |
 | :--- | :--- | :--- |
-| **Maker** | **0.00 %** | Příkaz přidává likviditu do knihy objednávek (Limit order). |
-| **Taker** | **0.09 %** | Příkaz odebírá likviditu (Market order nebo Limit agresivně spárovaný). |
+| **Maker** | **0.00 %** | The order adds liquidity to the order book (limit order). |
+| **Taker** | **0.09 %** | The order removes liquidity (market order, or a limit order matched aggressively). |
 
-Při větších objemech nebo algoritmickém obchodování představuje rozdíl mezi 0.00 % a 0.09 % zásadní úsporu nákladů.
-
----
-
-## Jak funguje ochrana `post_only`
-
-Při odeslání limitního příkazu hrozí, že se cena na trhu posune a příkaz se okamžitě spáruje s protistranou. V takovém případě by burza naúčtovala poplatek **0.09% (Taker)**.
-
-Příznak `post_only = true`:
-- Zaručuje, že příkaz vstoupí do knihy objednávek výhradně jako **Maker**.
-- Pokud by se příkaz měl okamžitě realizovat jako Taker, burza jej okamžitě odmítne/zruší bez jakéhokoliv poplatku.
+At larger volumes or in algorithmic trading, the difference between 0.00 % and 0.09 % amounts to a substantial cost saving.
 
 ---
 
-## Dynamický výpočet Maker ceny
+## How `post_only` Protection Works
 
-Knihovna obsahuje specializovanou třídu `MakerOrderStrategy`, která na základě živého stavu trhu vypočítá optimální limitní cenu s bezpečnostním offsetem:
+When you submit a limit order, the market price may move and the order may match against the other side immediately. In that case the exchange would charge the **0.09% (Taker)** fee.
 
-- **Pro NÁKUP (BUY)**:
-  $$\text{cena} = \text{best\_bid} - \text{offset}$$
-- **Pro PRODEJ (SELL)**:
-  $$\text{cena} = \text{best\_ask} + \text{offset}$$
-
-Příkaz je následně zaokrouhlen na platnou velikost cenového kroku měnového páru (`tick_size`).
+The `post_only = true` flag:
+- Guarantees that the order enters the order book exclusively as a **Maker**.
+- If the order would execute immediately as a Taker, the exchange rejects/cancels it right away at no fee.
 
 ---
 
-## Příklady použití
+## Dynamic Maker Price Calculation
+
+The library includes a dedicated `MakerOrderStrategy` class that computes the optimal limit price from the live market state, with a safety offset:
+
+- **For BUY**:
+  $$\text{price} = \text{best\_bid} - \text{offset}$$
+- **For SELL**:
+  $$\text{price} = \text{best\_ask} + \text{offset}$$
+
+The price is then rounded to a valid price increment for the trading pair (`tick_size`).
+
+---
+
+## Usage Examples
 
 === "Python"
 
@@ -43,7 +43,7 @@ Příkaz je následně zaokrouhlen na platnou velikost cenového kroku měnovéh
 
     client = RevolutXClient(api_key="...", private_key_path="keys/private.pem")
 
-    # Automaticky stáhne aktuální bid/ask, aplikuje offset 0.10 EUR a odešle s post_only=True
+    # Fetches the current bid/ask, applies a 0.10 EUR offset and submits with post_only=True
     order = client.place_maker_order(
         symbol="BTC-EUR",
         side=OrderSide.BUY,
@@ -60,7 +60,7 @@ Příkaz je následně zaokrouhlen na platnou velikost cenového kroku měnovéh
 
     $client = new Client(apiKey: '...', privateKeyPath: 'keys/private.pem');
 
-    // Automaticky stáhne aktuální bid/ask, aplikuje offset 0.10 EUR a odešle s post_only=True
+    // Fetches the current bid/ask, applies a 0.10 EUR offset and submits with post_only=True
     $order = $client->placeMakerOrder(
         symbol: 'BTC-EUR',
         side: OrderSide::BUY,

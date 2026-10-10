@@ -33,6 +33,7 @@ from revolut_x.types import (
     CurrencyConfig,
     Fill,
     OrderBook,
+    OrderBookLevel,
     OrderDetail,
     OrderResponse,
     PairConfig,
@@ -59,7 +60,7 @@ from revolut_x.exceptions import (
     RevolutXError,
 )
 
-__version__ = "0.0.6"
+__version__ = "0.0.8"
 
 __all__ = [
     # Client
@@ -85,6 +86,7 @@ __all__ = [
     "CurrencyConfig",
     "Fill",
     "OrderBook",
+    "OrderBookLevel",
     "OrderDetail",
     "OrderResponse",
     "PairConfig",

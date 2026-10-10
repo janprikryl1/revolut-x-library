@@ -107,13 +107,18 @@ currencies = client.get_currencies()      # → dict[str, CurrencyConfig]
 # Tickers
 tickers = client.get_tickers()            # → list[Ticker]
 ticker = client.get_ticker("BTC-EUR")     # → Ticker
-# ticker["last_price"], ticker["bid"], ticker["ask"], ticker["volume"]
+# ticker["last_price"], ticker["bid"], ticker["ask"], ticker["volume_24h"]
+# NOTE: 24h fields are suffixed: volume_24h / high_24h / low_24h
+#       (there are no plain "volume" / "high" / "low" keys)
 
-# Order book
-book = client.get_order_book("BTC-EUR", depth=20)  # → OrderBook
-# book["bids"][0] → ["95000.00", "0.5"]  (price, qty)
+# Order book — always 5 levels per side; the depth argument is ignored
+book = client.get_order_book("BTC-EUR")            # → OrderBook
+# Levels are DICTS, not [price, qty] pairs:
+# book["bids"][0] → {"p": "95000.00", "q": "0.5", "s": "BUYI", "pc": "EUR", ...}
+# price = book["bids"][0]["p"]   quantity = book["bids"][0]["q"]
 
-# Candles (OHLCV) — up to 1000 per call
+# Candles (OHLCV) — a single call must span at most 1000 candles,
+# a wider since/until window is rejected with HTTP 400 (not truncated)
 candles = client.get_candles("BTC-EUR", Interval.HOUR_1)
 candles = client.get_candles("BTC-EUR", Interval.DAY_1, since=ts_ms, until=ts_ms)
 

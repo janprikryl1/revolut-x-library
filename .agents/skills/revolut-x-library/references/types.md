@@ -56,27 +56,36 @@ class Candle(TypedDict):
 ### Trade
 
 ```python
-class Trade(TypedDict):
+class Trade(TypedDict, total=False):
     id: str           # UUID
     symbol: str       # e.g. "BTC/EUR"
     price: str
     quantity: str     # Base currency
     timestamp: int    # Unix ms
     side: str         # "buy" | "sell"
+    region: str       # e.g. "EEA", "UK"
 ```
 
 ### Ticker
 
 ```python
 class Ticker(TypedDict, total=False):
-    symbol: str       # e.g. "BTC/EUR"
-    bid: str          # Best bid (highest buy)
-    ask: str          # Best ask (lowest sell)
+    symbol: str             # e.g. "BTC/EUR"
+    bid: str                # Best bid (highest buy)
+    ask: str                # Best ask (lowest sell)
+    mid: str                # Midpoint of bid/ask
+    index_price: str        # Reference index price
     last_price: str
-    high: str         # 24h high
-    low: str          # 24h low
-    volume: str       # 24h volume
+    high_24h: str           # 24h high
+    low_24h: str            # 24h low
+    price_change_24h: str   # Absolute 24h change
+    volume_24h: str         # 24h volume in base currency
+    quote_volume_24h: str   # 24h volume in quote currency
+    region: str             # e.g. "EEA", "UK"
 ```
+
+The 24-hour fields carry the `_24h` suffix; plain `high` / `low` / `volume`
+keys do **not** exist in the response.
 
 ### PairConfig
 
@@ -108,9 +117,34 @@ class CurrencyConfig(TypedDict, total=False):
 ### OrderBook
 
 ```python
+class OrderBookLevel(TypedDict, total=False):
+    p: str     # Price in quote currency   <- the one you want
+    q: str     # Quantity in base currency <- the one you want
+    s: str     # "BUYI" (bid) | "SELL" (ask)
+    pc: str    # Price currency, e.g. "EUR"
+    qc: str    # Quantity currency, e.g. "BTC"
+    aid: str   # Asset id, e.g. "BTC"
+    anm: str   # Asset name, e.g. "Bitcoin"
+    no: str    # Number of orders at this level
+    pn: str    # Price notation, e.g. "MONE"
+    qn: str    # Quantity notation, e.g. "UNIT"
+    ve: str    # Venue, e.g. "REVX"
+    ts: str    # Trading system, e.g. "CLOB"
+    pdt: str   # Price timestamp (ISO-8601)
+
+
 class OrderBook(TypedDict):
-    bids: list[list[str]]   # [[price, qty], ...] sorted best-first
-    asks: list[list[str]]   # [[price, qty], ...] sorted best-first
+    bids: list[OrderBookLevel]   # dicts, sorted best (highest) first
+    asks: list[OrderBookLevel]   # dicts, sorted best (lowest) first
+```
+
+Levels are dictionaries, **not** `[price, qty]` pairs — the exchange always
+returns 5 levels per side:
+
+```python
+best_bid = book["bids"][0]
+best_bid["p"]   # "73875.00"  price
+best_bid["q"]   # "0.04966288"  quantity
 ```
 
 ### Balance

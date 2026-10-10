@@ -14,9 +14,11 @@ def main():
     pair = client.get_pair("BTC-EUR")
     print(f"Limits:  Min = {pair['min_order_size_quote']} EUR / {pair['min_order_size']} BTC")
 
-    # 3. Order Book snapshot
-    book = client.get_order_book("BTC-EUR", depth=3)
-    print(f"Top Ask: {book['asks'][0]} | Top Bid: {book['bids'][0]}")
+    # 3. Order Book snapshot — levels are dicts: price in 'p', quantity in 'q'
+    book = client.get_order_book("BTC-EUR")
+    top_ask, top_bid = book["asks"][0], book["bids"][0]
+    print(f"Top Ask: {top_ask['p']} EUR x {top_ask['q']} BTC | "
+          f"Top Bid: {top_bid['p']} EUR x {top_bid['q']} BTC")
 
     # 4. Candlesticks (OHLCV)
     candles = client.get_candles("BTC-EUR", interval=Interval.HOUR_1)

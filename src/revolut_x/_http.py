@@ -125,6 +125,14 @@ class HttpClient:
         if not endpoint.startswith("/"):
             endpoint = f"/{endpoint}"
 
+        # The canonical signature message uses alphabetically sorted query
+        # params (see docs/concepts/auth_ed25519.md), while requests would
+        # serialise them in insertion order. Sort here so the signed string and
+        # the string actually put on the wire are identical either way. None
+        # values are dropped for the same reason — the signer skips them too.
+        if params:
+            params = {k: v for k, v in sorted(params.items()) if v is not None}
+
         api_path = f"/api/{self.api_version}{endpoint}"
         full_url = f"{self.base_url}/{self.api_version}{endpoint}"
 

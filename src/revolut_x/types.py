@@ -136,7 +136,7 @@ class Candle(TypedDict):
     volume: str
 
 
-class Trade(TypedDict):
+class Trade(TypedDict, total=False):
     """A single public trade returned by :meth:`RevolutXClient.get_trades`.
 
     Attributes:
@@ -146,6 +146,7 @@ class Trade(TypedDict):
         quantity: Traded quantity in the base currency.
         timestamp: Trade time as Unix timestamp in milliseconds.
         side: ``'buy'`` or ``'sell'``.
+        region: Venue region the trade was executed in (e.g. ``'EEA'``, ``'UK'``).
     """
 
     id: str
@@ -154,6 +155,7 @@ class Trade(TypedDict):
     quantity: str
     timestamp: int
     side: str
+    region: str
 
 
 class Ticker(TypedDict, total=False):
@@ -163,19 +165,29 @@ class Ticker(TypedDict, total=False):
         symbol: Trading pair (e.g. ``'BTC/EUR'``).
         bid: Best bid (highest buy) price.
         ask: Best ask (lowest sell) price.
+        mid: Midpoint between ``bid`` and ``ask``.
+        index_price: Reference index price.
         last_price: Last traded price.
-        high: 24-hour high price.
-        low: 24-hour low price.
-        volume: 24-hour trading volume.
+        low_24h: 24-hour low price.
+        high_24h: 24-hour high price.
+        price_change_24h: Absolute price change over the last 24 hours.
+        volume_24h: 24-hour trading volume in the base currency.
+        quote_volume_24h: 24-hour trading volume in the quote currency.
+        region: Venue region (e.g. ``'EEA'``, ``'UK'``).
     """
 
     symbol: str
     bid: str
     ask: str
+    mid: str
+    index_price: str
     last_price: str
-    high: str
-    low: str
-    volume: str
+    low_24h: str
+    high_24h: str
+    price_change_24h: str
+    volume_24h: str
+    quote_volume_24h: str
+    region: str
 
 
 class PairConfig(TypedDict, total=False):
@@ -229,16 +241,60 @@ class CurrencyConfig(TypedDict, total=False):
     status: str
 
 
+class OrderBookLevel(TypedDict, total=False):
+    """A single price level in the order book.
+
+    The Revolut X order book uses short field names.  The two fields you
+    normally want are ``p`` (price) and ``q`` (quantity).
+
+    Attributes:
+        p: Price in the quote currency.
+        q: Quantity available at this price, in the base currency.
+        s: Side — ``'BUYI'`` for bids, ``'SELL'`` for asks.
+        pc: Price currency (e.g. ``'EUR'``).
+        qc: Quantity currency (e.g. ``'BTC'``).
+        aid: Asset identifier (e.g. ``'BTC'``).
+        anm: Asset name (e.g. ``'Bitcoin'``).
+        no: Number of orders aggregated into this level.
+        pn: Price notation (e.g. ``'MONE'``).
+        qn: Quantity notation (e.g. ``'UNIT'``).
+        ve: Venue (e.g. ``'REVX'``).
+        ts: Trading system (e.g. ``'CLOB'``).
+        pdt: Price timestamp as an ISO-8601 string.
+    """
+
+    p: str
+    q: str
+    s: str
+    pc: str
+    qc: str
+    aid: str
+    anm: str
+    no: str
+    pn: str
+    qn: str
+    ve: str
+    ts: str
+    pdt: str
+
+
 class OrderBook(TypedDict):
     """Order book snapshot from :meth:`RevolutXClient.get_order_book`.
 
+    Each entry is an :class:`OrderBookLevel` dictionary — **not** a
+    ``[price, quantity]`` pair.  Read the price and quantity from the
+    ``p`` and ``q`` keys::
+
+        best_bid = book["bids"][0]
+        print(best_bid["p"], best_bid["q"])
+
     Attributes:
-        bids: List of ``[price, quantity]`` pairs, sorted best-first.
-        asks: List of ``[price, quantity]`` pairs, sorted best-first.
+        bids: Buy levels, sorted best (highest price) first.
+        asks: Sell levels, sorted best (lowest price) first.
     """
 
-    bids: list[list[str]]
-    asks: list[list[str]]
+    bids: list[OrderBookLevel]
+    asks: list[OrderBookLevel]
 
 
 class Balance(TypedDict):

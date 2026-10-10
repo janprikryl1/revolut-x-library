@@ -1,41 +1,41 @@
-# Autentizace a podepisování Ed25519
+# Ed25519 Authentication and Request Signing
 
-Revolut X REST API vyžaduje pro všechny soukromé koncové body (zadávání objednávek, zůstatky na účtu, historie obchodů) kryptografické podepisování každého požadavku pomocí asymetrického algoritmu **Ed25519** (RFC 8032 / Edwards-curve Digital Signature Algorithm).
+The Revolut X REST API requires every request to all private endpoints (order placement, account balances, trade history) to be cryptographically signed using the asymmetric **Ed25519** algorithm (RFC 8032 / Edwards-curve Digital Signature Algorithm).
 
 ---
 
-## Formát kanonické zprávy
+## Canonical Message Format
 
-Zpráva k podpisu je složena z 5 částí v přesném pořadí:
+The message to be signed is composed of 5 parts in exactly this order:
 
 $$\text{message} = \text{timestamp} + \text{METHOD} + \text{path} + \text{query\_string} + \text{body}$$
 
-1. **`timestamp`** — Aktuální čas v milisekundách od epochy (Unix timestamp v ms). Musí být v toleranci burzy vůči času serveru.
-2. **`METHOD`** — Velkými písmeny normalizovaná HTTP metoda (`GET`, `POST`, `DELETE`).
-3. **`path`** — Relativní cesta endpointu, normalizovaná tak, aby začínala předponou `/api` (např. `/api/1.0/orders`).
-4. **`query_string`** — Abecedně seřazené parametry dotazu oddělené znakem `&`, kde klíč i hodnota jsou zakódovány podle standardu URL encode. Pokud parametry nejsou přítomny, řetězec je prázdný.
-5. **`body`** — Minifikované tělo požadavku ve formátu JSON bez přebytečných mezer za oddělovači (`,`, `:`). Pokud tělo není přítomno, řetězec je prázdný.
+1. **`timestamp`** — Current time in milliseconds since the epoch (Unix timestamp in ms). Must fall within the exchange's tolerance window relative to server time.
+2. **`METHOD`** — The HTTP method normalised to uppercase (`GET`, `POST`, `DELETE`).
+3. **`path`** — The relative endpoint path, normalised so that it starts with the `/api` prefix (e.g. `/api/1.0/orders`).
+4. **`query_string`** — Alphabetically sorted query parameters joined by `&`, where both key and value are URL-encoded. If no parameters are present, the string is empty.
+5. **`body`** — The minified JSON request body with no extra whitespace after separators (`,`, `:`). If no body is present, the string is empty.
 
 ---
 
-## Požadované HTTP hlavičky
+## Required HTTP Headers
 
-Každý autentizovaný požadavek musí obsahovat následující hlavičky:
+Every authenticated request must include the following headers:
 
-- `X-Revx-API-Key` — Váš veřejný API klíč z nastavení účtu Revolut X.
-- `X-Revx-Timestamp` — Časová značka v milisekundách shodná se značkou použitou ve zprávě podpisu.
-- `X-Revx-Signature` — 64bajtový Ed25519 podpis zprávy zakódovaný do Base64.
-- `Content-Type: application/json` — Pouze v případě, že požadavek nese tělo (např. POST).
+- `X-Revx-API-Key` — Your public API key from the Revolut X account settings.
+- `X-Revx-Timestamp` — The millisecond timestamp, identical to the one used in the signature message.
+- `X-Revx-Signature` — The 64-byte Ed25519 signature of the message, Base64-encoded.
+- `Content-Type: application/json` — Only when the request carries a body (e.g. POST).
 
 ---
 
-## Implementace v SDK
+## SDK Implementation
 
-Obě SDK v repozitáři řeší celou proceduru plně automaticky:
+Both SDKs in this repository handle the entire procedure fully automatically:
 
 === "Python"
 
-    V Pythonu je podepisování implementováno v modulu `revolut_x._auth` s využitím standardní knihovny `cryptography`:
+    In Python, signing is implemented in the `revolut_x._auth` module using the standard `cryptography` library:
 
     ```python
     from revolut_x import RevolutXClient
@@ -44,13 +44,13 @@ Obě SDK v repozitáři řeší celou proceduru plně automaticky:
         api_key="your-api-key",
         private_key_path="keys/private.pem",
     )
-    # Všechna volání orders/balances jsou automaticky podepsána:
+    # All orders/balances calls are signed automatically:
     balances = client.get_balances()
     ```
 
 === "PHP"
 
-    V PHP je podepisování implementováno ve třídě `RevolutX\Auth\Signer` s využitím nativního rozšíření `ext-sodium` (`sodium_crypto_sign_detached`):
+    In PHP, signing is implemented in the `RevolutX\Auth\Signer` class using the native `ext-sodium` extension (`sodium_crypto_sign_detached`):
 
     ```php
     use RevolutX\Client;
@@ -59,19 +59,19 @@ Obě SDK v repozitáři řeší celou proceduru plně automaticky:
         apiKey: 'your-api-key',
         privateKeyPath: 'keys/private.pem'
     );
-    // Všechna volání orders/balances jsou automaticky podepsána:
+    // All orders/balances calls are signed automatically:
     $balances = $client->getBalances();
     ```
 
 ---
 
-## Generování klíčového páru Ed25519
+## Generating an Ed25519 Key Pair
 
-Pro vygenerování nového privátního klíče ve standardním formátu PKCS#8 PEM lze použít OpenSSL:
+To generate a new private key in the standard PKCS#8 PEM format, you can use OpenSSL:
 
 ```bash
 openssl genpkey -algorithm ed25519 -out keys/private.pem
 openssl pkey -in keys/private.pem -pubout -out keys/public.pem
 ```
 
-Veřejný klíč `keys/public.pem` nahrajte do administrace svého účtu na **Revolut X**, kde vám bude vygenerován příslušný `API Key`.
+Upload the public key `keys/public.pem` to the settings of your **Revolut X** account, where the matching `API Key` will be generated for you.

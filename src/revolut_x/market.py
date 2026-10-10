@@ -10,6 +10,7 @@ All methods in this mixin work **without** an API key.
 
 from __future__ import annotations
 import logging
+import time
 from typing import Any, Iterator, TYPE_CHECKING
 from revolut_x.types import (
     Candle,
@@ -26,6 +27,10 @@ if TYPE_CHECKING:
     from revolut_x._http import HttpClient
 
 logger = logging.getLogger(__name__)
+
+#: Largest page size the ``/public/trades/all`` endpoint accepts. Asking for
+#: more is rejected with HTTP 400 ('Limit must be between 1 and 100').
+MAX_TRADES_PER_PAGE = 100
 
 
 class MarketMixin:
@@ -187,21 +192,26 @@ class MarketMixin:
 
         Args:
             symbol: Trading pair (e.g. ``'BTC-EUR'``).
-            depth: Number of price levels to retrieve (default: 10).
+            depth: Requested number of price levels.  **Currently ignored by
+                the exchange** — the venue always returns 5 levels per side,
+                regardless of this value.  Kept so that the SDK picks up
+                deeper books automatically if Revolut X starts honouring it.
 
         Returns:
             An :class:`~revolut_x.types.OrderBook` with ``bids`` and ``asks``
-            lists, each containing ``[price, quantity]`` pairs sorted
-            best-first.
+            lists.  Each entry is an
+            :class:`~revolut_x.types.OrderBookLevel` **dictionary** — read the
+            price from ``['p']`` and the quantity from ``['q']``.  Levels are
+            sorted best-first.
 
         Raises:
             ApiError: If the API returns a non-2xx response.
 
         Example::
 
-            >>> book = client.get_order_book("BTC-EUR", depth=5)
+            >>> book = client.get_order_book("BTC-EUR")
             >>> best_bid = book["bids"][0]
-            >>> print(f"Best bid: {best_bid[0]} EUR")
+            >>> print(f"Best bid: {best_bid['p']} EUR x {best_bid['q']} BTC")
         """
         api_symbol = _normalize_symbol(symbol)
         _status, data = self._http.request(
@@ -240,18 +250,24 @@ class MarketMixin:
             ``start``, ``open``, ``high``, ``low``, ``close``, ``volume``.
 
         Note:
-            The API returns at most **1000 candles** per request.  To download
-            a longer time range, use :meth:`iter_candles` which automatically
-            paginates through the data.
+            A single request covers at most **1000 candles**.  The exchange
+            does *not* silently truncate a wider window — it rejects it with
+            HTTP 400 (``'Lookup window interval exceeds the limit of 1000
+            candles'``).  So ``until - since`` must stay within
+            ``999 * interval``; to download a longer range use
+            :meth:`iter_candles`, which paginates automatically.
 
         Raises:
-            ApiError: If the API returns a non-2xx response.
+            ApiError: If the API returns a non-2xx response — including when
+                ``since``/``until`` span more than 1000 candles.
 
         Example::
 
             >>> from revolut_x import Interval
+            >>> # last 500 hours — comfortably inside the 1000-candle limit
+            >>> now_ms = int(time.time() * 1000)
             >>> candles = client.get_candles("BTC-EUR", Interval.HOUR_1,
-            ...                              since=1700000000000)
+            ...                              since=now_ms - 500 * 3_600_000)
             >>> for c in candles[:3]:
             ...     print(f"{c['start']}: O={c['open']} H={c['high']}")
         """
@@ -294,7 +310,8 @@ class MarketMixin:
 
         Yields:
             :class:`~revolut_x.types.Candle` dictionaries in chronological
-            order (oldest first).
+            order (oldest first).  No candle is yielded twice, and none is
+            yielded with a ``start`` later than ``until``.
 
         Example::
 
@@ -303,38 +320,41 @@ class MarketMixin:
             ...     process(candle)  # each candle is a dict
         """
         interval_ms = int(interval) * 60 * 1000  # interval in milliseconds
-        max_batch_ms = 999 * interval_ms  # Revolut X limits window to max 1000 candles
+        # The API rejects a window spanning more than 1000 candles, and the
+        # window is inclusive on both ends — so 999 intervals == 1000 candles.
+        max_batch_ms = 999 * interval_ms
+
+        if since is None:
+            # Without a start there is nothing to paginate: a single request
+            # already returns the most recent batch.
+            yield from self.get_candles(symbol, interval, until=until)
+            return
+
         current_since = since
 
         while True:
-            batch_until = None
-            if current_since is not None:
-                chunk_until = current_since + max_batch_ms
-                if until is not None:
-                    batch_until = min(until, chunk_until)
-                else:
-                    batch_until = chunk_until
-            elif until is not None:
-                batch_until = until
+            # Walk fixed-size windows forward rather than chaining off the last
+            # returned candle, so that gaps in the series (illiquid pairs with
+            # no trades in an interval) cannot cut the iteration short.
+            hard_end = until if until is not None else int(time.time() * 1000)
+            batch_until = min(current_since + max_batch_ms, hard_end)
+            # The API rejects a window where 'until' equals 'since', which is
+            # what a final single-candle window would produce. Always ask for
+            # at least two candles and drop the overshoot below.
+            batch_until = max(batch_until, current_since + interval_ms)
 
             batch = self.get_candles(
                 symbol, interval, since=current_since, until=batch_until
             )
-            if not batch:
-                break
+            if until is not None:
+                batch = [c for c in batch if int(c.get("start", 0)) <= until]
 
             yield from batch
 
-            if len(batch) < 1000 and (batch_until == until or until is None):
-                # Last page — fewer than max results
+            if batch_until >= hard_end:
                 break
 
-            # Move window forward: start after the last candle
-            last_start = batch[-1].get("start", 0)
-            current_since = int(last_start) + interval_ms
-
-            if until is not None and current_since > until:
-                break
+            current_since = batch_until + interval_ms
 
     # ------------------------------------------------------------------
     # Public Trades
@@ -347,9 +367,9 @@ class MarketMixin:
         start_date: int | None = None,
         end_date: int | None = None,
         cursor: str | None = None,
-        limit: int = 1900,
+        limit: int = MAX_TRADES_PER_PAGE,
     ) -> tuple[list[Trade], str | None]:
-        """Fetch a single page of public trades (up to 1900 per request).
+        """Fetch a single page of public trades (up to 100 per request).
 
         Args:
             symbol: Trading pair (e.g. ``'BTC-EUR'``).
@@ -357,7 +377,10 @@ class MarketMixin:
             end_date: End time as Unix timestamp in **milliseconds**.
             cursor: Pagination cursor from a previous response's
                 ``metadata.next_cursor`` field.
-            limit: Maximum number of trades to return (1–1900, default: 1900).
+            limit: Maximum number of trades to return.  The exchange accepts
+                **1–100** and rejects anything larger with HTTP 400, so values
+                outside that range are clamped into it.  To read more than one
+                page, follow ``next_cursor`` or use :meth:`iter_trades`.
 
         Returns:
             A tuple of ``(trades, next_cursor)`` where ``trades`` is a list of
@@ -375,7 +398,7 @@ class MarketMixin:
         api_symbol = _normalize_symbol(symbol)
         params: dict[str, Any] = {
             "symbol": api_symbol,
-            "limit": min(limit, 1900),
+            "limit": max(1, min(limit, MAX_TRADES_PER_PAGE)),
         }
         if start_date is not None:
             params["start_date"] = int(start_date)
@@ -403,7 +426,7 @@ class MarketMixin:
         *,
         start_date: int | None = None,
         end_date: int | None = None,
-        limit: int = 1900,
+        limit: int = MAX_TRADES_PER_PAGE,
     ) -> Iterator[Trade]:
         """Iterate over all public trades in a time range, automatically paginating.
 
@@ -414,7 +437,7 @@ class MarketMixin:
             symbol: Trading pair (e.g. ``'BTC-EUR'``).
             start_date: Start time as Unix timestamp in **milliseconds**.
             end_date: End time as Unix timestamp in **milliseconds**.
-            limit: Page size per request (1–1900, default: 1900).
+            limit: Page size per request (1–100, clamped into that range).
 
         Yields:
             :class:`~revolut_x.types.Trade` dictionaries.
